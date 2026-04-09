@@ -1,84 +1,303 @@
-/*h1 text css*/
-.texth1 {
-	text-align: center;
-	top: 50%;
-  	left: 50%;
-  	transform: translate(-50%, -50%);
-  	position: absolute;
-  	color: white;
-}
+/* ===================================
+   MAINPAGE.CSS - Mobile-Friendly
+   Homepage-specific styles only
+   =================================== */
 
-/*h1 backgraund imgae css*/
+/* Hero Section with Background Image */
 .bimage {
-	margin: 10px;
-	background-image: url(images/cat.jpg);
-	height: 300px;
-	background-position: center;
-	position: relative;
-	border-radius: 4px;
+    margin: 20px 0;
+    background-image: url(../images/cat1.jpg);
+    height: 400px;
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+	background-color: #2c3e50;
+    position: relative;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0);
+    overflow: hidden;
 }
 
-/*colour for whole background*/
-body {
-	background-color: lightgray;
+/* Dark overlay for better text readability */
+.bimage::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
 }
 
+/* Hero Title */
+.texth1 {
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+    color: #ffd700;
+    z-index: 2;
+    width: 90%;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+    padding: 0 20px;
+}
+
+.texth1 h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+/* Profile/Cat Image */
+.profile-image {
+    display: block;
+    margin: 30px auto;
+    max-width: 500px;
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+}
+
+.profile-image:hover {
+    transform: scale(1.02);
+}
+
+/* About/Summary Section */
+.summary {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 25px;
+    border: 3px solid #1a1a1a;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.summary p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    text-align: justify;
+    margin-bottom: 15px;
+}
+
+.summary p:last-child {
+    margin-bottom: 0;
+}
+
+/* Note Section */
+.note {
+    text-align: center;
+    margin: 40px auto 30px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    max-width: 800px;
+}
+
+.note h4 {
+    color: #2c3e50;
+    font-size: 1.3rem;
+    line-height: 1.6;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Section Heading */
 h3 {
-	text-align: center;
-	margin-top: 90px;
+    text-align: center;
+    margin-top: 50px;
+    margin-bottom: 30px;
+    font-size: 1.8rem;
 }
 
-/* for social links, might change by adding it into nav bar */
-.instagram {
-	text-align: center;
-	border: 2px solid black;
-  	border-radius: 8px;
-  	padding: 5px;
+/* Social Links Container (Homepage specific) */
+.social-links-container {
+    max-width: 600px;
+    margin: 40px auto;
 }
 
-.tellonym{
-	text-align: center;
-	border: 2px solid black;
-  	border-radius: 8px;
-  	padding: 5px;
-  	margin-top: 5px;
+.instagram,
+.tellonym {
+    text-align: center;
+    border: 2px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/*for navigation bar*/
-.nav {
-	list-style-type: none;
-	margin: 0;
-	padding: 0;
-	overflow: hidden;
-	background-color: black;
-	border-radius: 8px;
+.instagram:hover,
+.tellonym:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border-color: #4CAF50;
 }
 
-li {
-	float: left;
+.instagram a,
+.tellonym a {
+    color: #1a1a1a;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: block;
 }
 
-li a {
-  display: block;
-  color: white;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
+.instagram a:hover,
+.tellonym a:hover {
+    color: #4CAF50;
 }
 
-li a:hover {
-  background-color: #D3D3D3;
-  color: #000;
+/* Icons for social links */
+.instagram::before {
+    content: "📷 ";
+    font-size: 1.3rem;
 }
 
-/*for summary*/
-.summary{
-  width: 500px;
-  padding: 10px;
-  border: 5px solid black;
-  margin: 0;
+.tellonym::before {
+    content: "💬 ";
+    font-size: 1.3rem;
 }
 
-.note{
-	text-align: center;
+/* ===================================
+   MOBILE RESPONSIVE
+   =================================== */
+
+/* Tablets */
+@media (max-width: 768px) {
+    .bimage {
+        height: 300px;
+        margin: 15px 0;
+        border-radius: 10px;
+    }
+    
+    .texth1 {
+        padding: 0 15px;
+    }
+    
+    .texth1 h1 {
+        font-size: 2rem;
+        letter-spacing: 1px;
+    }
+    
+    .profile-image {
+        max-width: 100%;
+        margin: 25px auto;
+    }
+    
+    .summary {
+        padding: 20px;
+        border-width: 2px;
+        margin: 25px 15px;
+    }
+    
+    .summary p {
+        font-size: 1rem;
+    }
+    
+    .note {
+        padding: 18px;
+        margin: 30px 15px 25px 15px;
+    }
+    
+    .note h4 {
+        font-size: 1.2rem;
+    }
+    
+    h3 {
+        font-size: 1.5rem;
+        margin-top: 35px;
+        margin-bottom: 25px;
+    }
+}
+
+/* Mobile Phones */
+@media (max-width: 480px) {
+    .bimage {
+        height: 250px;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+    
+    .texth1 {
+        padding: 0 10px;
+    }
+    
+    .texth1 h1 {
+        font-size: 1.5rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .profile-image {
+        margin: 20px auto;
+        border-radius: 8px;
+    }
+    
+    .summary {
+        padding: 15px;
+        margin: 20px 10px;
+        border-width: 2px;
+    }
+    
+    .summary p {
+        text-align: left;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    
+    .note {
+        padding: 15px;
+        margin: 25px 10px 20px 10px;
+    }
+    
+    .note h4 {
+        font-size: 1.1rem;
+        line-height: 1.5;
+    }
+    
+    h3 {
+        font-size: 1.3rem;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        padding: 0 10px;
+    }
+    
+    .social-links-container {
+        margin: 30px 10px;
+    }
+    
+    .instagram,
+    .tellonym {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .instagram a,
+    .tellonym a {
+        font-size: 1rem;
+    }
+}
+
+/* Extra Small Screens */
+@media (max-width: 360px) {
+    .bimage {
+        height: 200px;
+    }
+    
+    .texth1 h1 {
+        font-size: 1.3rem;
+    }
+    
+    .summary {
+        padding: 12px;
+    }
+    
+    .summary p {
+        font-size: 0.9rem;
+    }
 }

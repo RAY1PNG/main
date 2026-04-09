@@ -1,35 +1,223 @@
-/*for navigation bar*/
-.nav {
-	list-style-type: none;
-	margin: 0;
-	padding: 0;
-	overflow: hidden;
-	background-color: black;
-	border-radius: 8px;
+
+/* Page padding */
+body {
+    padding: 20px;
 }
 
-li {
-	float: left;
+/* Page Header */
+.page-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
 }
 
-li a {
-  display: block;
-  color: white;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
+.page-header h1 {
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
-li a:hover {
-  background-color: #D3D3D3;
-  color: #000;
+/* Welcome/Intro Section */
+h3 {
+    text-align: center;
+    margin: 30px 0 20px 0;
 }
 
-/*for the game*/
+.game-intro {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 40px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.game-intro p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #555;
+}
+
+/* Main Game Container */
 .game1 {
-	text-align: center;
+    text-align: center;
+    margin: 40px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    max-width: 600px;
 }
 
-h3{
-	text-align: center;
+.game1 h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+/* Scratch Iframe */
+.game1 iframe {
+    border: 3px solid #1a1a1a;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    background: #000;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Game Controls/Buttons */
+.game-controls {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.game-button {
+    padding: 12px 25px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.game-button:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.game-button.secondary {
+    background-color: #6c757d;
+}
+
+.game-button.secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Game Info Section */
+.game-info {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 25px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.game-info h4 {
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.game-info ul {
+    margin-left: 25px;
+    margin-bottom: 15px;
+}
+
+.game-info li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+/* Tags/Badges */
+.game-tags {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.tag {
+    display: inline-block;
+    background: #4CAF50;
+    color: white;
+    padding: 6px 15px;
+    border-radius: 20px;
+    margin: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.tag.difficulty-easy {
+    background: #4CAF50;
+}
+
+.tag.difficulty-medium {
+    background: #ff9800;
+}
+
+.tag.difficulty-hard {
+    background: #f44336;
+}
+
+.tag.category {
+    background: #2196F3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        padding: 15px;
+    }
+    
+    .game1 {
+        padding: 20px;
+        margin: 30px auto;
+    }
+    
+    .game1 iframe {
+        width: 100% !important;
+        height: auto;
+        aspect-ratio: 485 / 402;
+    }
+    
+    .game-intro,
+    .game-info {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .page-header {
+        padding: 20px 15px;
+        margin-bottom: 25px;
+    }
+    
+    .game1 {
+        padding: 15px;
+        margin: 20px auto;
+    }
+    
+    .game1 iframe {
+        border-width: 2px;
+    }
+    
+    .game-intro p {
+        font-size: 1rem;
+    }
+    
+    .game-button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 360px) {
+    .game1 iframe {
+        width: 100% !important;
+        height: 250px !important;
+    }
 }

@@ -1,0 +1,113 @@
+/* ===================================
+   NAVBAR.CSS - Mobile-Friendly Version
+   Consistent padding across all pages
+   =================================== */
+
+.nav {
+    list-style-type: none;
+    margin: 0 0 30px 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.nav ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nav li {
+    float: left;
+    margin: 0;
+    padding: 0;
+}
+
+.nav li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 16px 24px;  /* Consistent padding: 16px top/bottom, 24px left/right */
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 1rem;
+    text-transform: capitalize;
+}
+
+.nav li a:hover {
+    background-color: #D3D3D3;
+    color: #000;
+}
+
+/* Active page indicator */
+.nav li a.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* Clear floats */
+.nav::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* ===================================
+   MOBILE RESPONSIVE
+   =================================== */
+
+/* Tablets (portrait) */
+@media (max-width: 768px) {
+    .nav li a {
+        padding: 14px 20px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Mobile phones (landscape) */
+@media (max-width: 600px) {
+    /* Stack navbar vertically */
+    .nav li {
+        float: none;
+        width: 100%;
+        border-bottom: 1px solid #333;
+    }
+    
+    .nav li:last-child {
+        border-bottom: none;
+    }
+    
+    .nav li a {
+        padding: 14px;
+        text-align: left;
+        border-left: 3px solid transparent;
+    }
+    
+    .nav li a:hover {
+        border-left-color: #4CAF50;
+    }
+    
+    .nav {
+        margin: 0 0 20px 0;
+        border-radius: 6px;
+    }
+}
+
+/* Mobile phones (portrait - very small) */
+@media (max-width: 480px) {
+    .nav li a {
+        padding: 12px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+    .nav li a {
+        padding: 10px;
+        font-size: 0.85rem;
+    }
+}
