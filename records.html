@@ -15,15 +15,7 @@
 
 <body>
     <!-- Header (navbar) -->
-    <header>
-        <nav class="nav">
-            <ul>
-                <li><a href="index.html">About</a></li>
-                <li><a href="games/scratch/game.html">Game</a></li>
-                <li><a href="records.html" class="active">Records</a></li>
-            </ul>
-        </nav>
-    </header>
+    <div id="header"></div>
 
     <!-- Main container for content -->
     <div class="container">
@@ -175,13 +167,18 @@
     </div>
 
     <!-- Footer -->
-    <footer>
-        <div class="social-links">
-            <a href="https://instagram.com/ray_n_ond?igshid=ZGUzMzM3NWJiOQ==">Instagram</a>
-            <a href="https://tellonym.me/STARYray">Tellonym</a>
-        </div>
-        <p>&copy; 2026 Raymond</p>
-    </footer>
+    <div id="footer"></div>
+
+    <script>
+		fetch('/main/components/header.html')
+			.then(Response => Response.text())
+			.then(data => document.getElementById('header').innerHTML = data);
+
+		fetch('/main/components/footer.html')
+			.then(Response => Response.text())
+			.then(data => document.getElementById('footer').innerHTML = data);
+	</script>
+
 
 </body>
 
