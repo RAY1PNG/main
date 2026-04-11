@@ -34,11 +34,11 @@
 	<div id="footer"></div>
 
 	<script>
-		fetch('../main/components/header.html')
+		fetch('/main/components/header.html')
 			.then(Response => Response.text())
 			.then(data => document.getElementById('header').innerHTML = data);
 
-		fetch('../main/components/footer.html')
+		fetch('/main/components/footer.html')
 			.then(Response => Response.text())
 			.then(data => document.getElementById('footer').innerHTML = data);
 	</script>
