@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Games for Two</title>
+<style>
+  :root {
+    --bg: #12141a;
+    --panel: #1b1f28;
+    --line: #2e3442;
+    --text: #eef1f6;
+    --muted: #98a2b3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 48px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 22px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  a.game {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--c);
+    border-radius: 14px; padding: 18px;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  a.game:hover, a.game:focus-visible { transform: translateY(-2px); border-color: var(--c); outline: none; }
+  .icon { font-size: 2rem; line-height: 1; }
+  .name { font-size: 1.25rem; font-weight: 800; margin: 8px 0 2px; }
+  .desc { color: var(--muted); margin: 0 0 12px; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tags span { font-size: 0.8rem; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--muted); }
+  .tags span.time { color: var(--c); border-color: var(--c); }
+  h2 { font-size: 0.85rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin: 28px 0 10px; }
+  ol { margin: 0; padding-left: 1.3em; color: var(--muted); }
+  ol li { margin-bottom: 4px; }
+  footer { margin-top: 28px; color: var(--muted); font-size: 0.9rem; display: flex; gap: 16px; flex-wrap: wrap; }
+  footer a { color: var(--text); }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { a.game { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>🎮 Games for Two</h1>
+  <p class="lead">Play together from anywhere. One of you creates a room, the other joins with the code or invite link.</p>
+
+  <div class="grid">
+    <a class="game" href="quick-duel/" style="--c:#c6f24e">
+      <div class="icon">⚡</div>
+      <div class="name">Quick Duel</div>
+      <p class="desc">Seven tiny games picked at random. Reaction, maths, tapping and more. First to 3 wins.</p>
+      <div class="tags"><span class="time">1–2 min</span><span>Head to head</span></div>
+    </a>
+    <a class="game" href="same-brain/" style="--c:#ff7eb6">
+      <div class="icon">🧠</div>
+      <div class="name">Same Brain</div>
+      <p class="desc">Same prompt, one secret word each. Can you two think of the same thing?</p>
+      <div class="tags"><span class="time">2–3 min</span><span>Same team</span></div>
+    </a>
+    <a class="game" href="sea-battle/" style="--c:#37c6b0">
+      <div class="icon">⚓</div>
+      <div class="name">Sea Battle</div>
+      <p class="desc">Hide your fleet, then take turns firing at each other's waters until one fleet is sunk.</p>
+      <div class="tags"><span class="time">10–15 min</span><span>Head to head</span></div>
+    </a>
+    <a class="game" href="talk-cards/" style="--c:#ffb454">
+      <div class="icon">💬</div>
+      <div class="name">Talk Cards</div>
+      <p class="desc">52 conversation questions. Take turns answering, or guess what the other will say.</p>
+      <div class="tags"><span class="time">As long as you like</span><span>Conversation</span></div>
+    </a>
+  </div>
+
+  <h2>How to play together</h2>
+  <ol>
+    <li>Both open the same game.</li>
+    <li>One taps <b>Create room</b> and sends the code or invite link.</li>
+    <li>The other joins. Keep the page open on screen while you play.</li>
+  </ol>
+
+  <footer>
+    <a href="scratch/game.html">My first Scratch game</a>
+    <a href="../">Back to the main site</a>
+  </footer>
+</main>
+</body>
+</html>
