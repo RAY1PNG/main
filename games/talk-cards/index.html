@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talk Cards</title>
+<style>
+  :root {
+    --bg: #1c1622;
+    --panel: #2a2133;
+    --panel-2: #352a40;
+    --line: #4a3c58;
+    --text: #f4eef7;
+    --muted: #b3a4c0;
+    --accent: #ffb454;
+    --accent-ink: #3a2400;
+    --good: #6fd6a4;
+    --warn: #ff8f7a;
+    --paper: #fdf6e9;
+    --ink: #2b2230;
+    --ink-muted: #7b6c84;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.6rem; margin: 0; }
+  h2 { font-size: 0.85rem; margin: 0 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .room-tag { color: var(--muted); font-size: 0.9rem; }
+  .room-tag b { color: var(--text); letter-spacing: 0.15em; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-top: 16px; }
+  .hidden { display: none !important; }
+  button {
+    font: inherit; color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  input[type=text], textarea {
+    font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; min-width: 0;
+  }
+  textarea { width: 100%; resize: vertical; display: block; }
+  input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .lobby-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .lobby-choices > div { background: var(--panel-2); border-radius: 10px; padding: 16px; }
+  .lobby-choices p { margin: 0 0 12px; color: var(--muted); }
+  #codeInput { width: 8.5em; text-transform: uppercase; letter-spacing: 0.2em; text-align: center; }
+  .big-code { font-size: 2.4rem; font-weight: 800; letter-spacing: 0.3em; margin: 6px 0; }
+  .status { font-size: 1.1rem; font-weight: 600; margin: 14px 0 0; }
+  .note { color: var(--muted); font-size: 0.9rem; margin: 6px 0 0; }
+  .error { color: var(--warn); margin: 10px 0 0; min-height: 1.4em; }
+
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mode { text-align: left; padding: 14px; border-radius: 12px; }
+  .mode b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  .mode span { color: var(--muted); font-size: 0.9rem; }
+  .mode.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { border-radius: 999px; padding: 6px 14px; }
+  .chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
+  .topline { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; }
+  .card {
+    background: var(--paper); color: var(--ink); border-radius: 16px; padding: 22px 22px 18px;
+    margin-top: 12px; min-height: 210px; display: flex; flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  .card-top { display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); }
+  .card-q { font-size: 1.45rem; line-height: 1.35; font-weight: 600; margin: auto 0; padding: 18px 0; text-wrap: balance; }
+  .card-id { font-size: 0.75rem; color: var(--ink-muted); text-align: right; }
+  .reveal { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .reveal > div { background: var(--panel-2); border-radius: 10px; padding: 12px; }
+  .reveal p { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .good { color: var(--good); }
+  .bad { color: var(--warn); }
+
+  .chat-log {
+    height: 130px; overflow-y: auto; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font-size: 0.95rem;
+  }
+  .chat-log div { overflow-wrap: anywhere; }
+  .chat-log .me { color: var(--accent); }
+  .chat-log .sys { color: var(--muted); font-style: italic; }
+  .chat-row { display: flex; gap: 8px; margin-top: 8px; }
+  .chat-row input { flex: 1; }
+  .emoji-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .emoji-row button { padding: 4px 10px; font-size: 1.1rem; }
+
+  @media (max-width: 600px) {
+    .lobby-choices, .modes, .reveal { grid-template-columns: 1fr; }
+    .card-q { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>💬 Talk Cards</h1>
+    <span class="room-tag hidden" id="roomTag">Room <b id="roomTagCode"></b> <button id="leaveBtn" style="margin-left:8px;padding:4px 10px">Leave</button></span>
+  </header>
+
+  <!-- Lobby -->
+  <section class="panel" id="lobby">
+    <div class="lobby-choices" id="lobbyChoices">
+      <div>
+        <h2>Start a game</h2>
+        <p>Get a room code and send it to the other player.</p>
+        <button class="primary" id="createBtn">Create room</button>
+      </div>
+      <div>
+        <h2>Join a game</h2>
+        <p>Type the code the other player sent you.</p>
+        <div class="row">
+          <input type="text" id="codeInput" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Room code">
+          <button class="primary" id="joinBtn">Join</button>
+        </div>
+      </div>
+    </div>
+    <div id="waiting" class="hidden">
+      <h2>Your room code</h2>
+      <div class="big-code" id="bigCode"></div>
+      <p class="note">Send the code or the invite link to the other player. The game starts when they join. If you switch apps to send it, come back to this page afterwards.</p>
+      <div class="row" style="margin-top:12px"><button class="primary" id="inviteBtn">Copy invite link</button><button id="cancelBtn">Cancel</button></div>
+      <p class="note" id="inviteNote" style="overflow-wrap:anywhere"></p>
+    </div>
+    <p class="error" id="lobbyMsg" role="status"></p>
+    <button id="joinCancel" class="hidden">Cancel</button>
+  </section>
+
+  <!-- Game -->
+  <section id="game" class="hidden">
+    <p class="error" id="linkNote" role="status" style="min-height:0"></p>
+
+    <div class="panel" id="loadingPanel"><p class="note">Getting the cards ready…</p></div>
+
+    <!-- Setup -->
+    <div class="panel hidden" id="setupPanel">
+      <h2>Pick a game</h2>
+      <div class="modes">
+        <button class="mode" id="modeTalk" data-mode="talk"><b>Take Turns</b><span>Draw a card and both answer it out loud or in the chat. No score, just talking.</span></button>
+        <button class="mode" id="modeGuess" data-mode="guess"><b>Guess My Answer</b><span>One of you answers for real, the other guesses what they will say. Score a point for each match.</span></button>
+      </div>
+      <h2 style="margin-top:18px">How deep?</h2>
+      <div class="chips" id="depthChips"></div>
+      <p class="note" id="deckCount"></p>
+      <div class="row" style="margin-top:16px"><button class="primary" id="startBtn">Start</button></div>
+      <p class="note">Either of you can change these. You both see the same choices.</p>
+    </div>
+
+    <!-- Play -->
+    <div class="panel hidden" id="playPanel">
+      <div class="topline"><span id="progress"></span><span id="score"></span></div>
+      <div class="card">
+        <div class="card-top"><span id="cardCat"></span><span id="cardDepth"></span></div>
+        <p class="card-q" id="cardQ"></p>
+        <div class="card-id" id="cardId"></div>
+      </div>
+      <p class="status" id="turnLine" role="status"></p>
+
+      <div id="guessBox">
+        <div id="answerForm" style="margin-top:10px">
+          <textarea id="answerInput" maxlength="300" rows="3" aria-label="Your answer"></textarea>
+          <div class="row" style="margin-top:8px"><button class="primary" id="answerBtn">Lock in</button></div>
+        </div>
+        <p class="note" id="guessWait"></p>
+        <div class="reveal" id="revealBox">
+          <div><h2 id="realLabel"></h2><p id="realText"></p></div>
+          <div><h2 id="guessLabel"></h2><p id="guessText"></p></div>
+        </div>
+        <div class="row" id="verdictRow" style="margin-top:12px">
+          <button class="primary" id="matchBtn">They got it ✓</button>
+          <button id="missBtn">Not quite ✗</button>
+        </div>
+        <p class="status" id="verdictLine"></p>
+      </div>
+
+      <div class="row" style="margin-top:16px">
+        <button class="primary" id="nextBtn">Next card</button>
+        <button id="skipBtn">Skip card</button>
+        <button id="endBtn">End game</button>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div class="panel hidden" id="donePanel">
+      <h2>That's the game</h2>
+      <p class="status" id="doneLine" style="margin-top:0"></p>
+      <p class="note" id="doneNote"></p>
+      <div class="row" style="margin-top:14px"><button class="primary" id="againBtn">Play again</button></div>
+    </div>
+
+    <div class="panel">
+      <h2>Chat</h2>
+      <div class="chat-log" id="chatLog" aria-live="polite"></div>
+      <div class="chat-row">
+        <input type="text" id="chatInput" maxlength="300" placeholder="Say something…" autocomplete="off" aria-label="Chat message">
+        <button id="chatSend">Send</button>
+      </div>
+      <div class="emoji-row" id="emojiRow"></div>
+    </div>
+  </section>
+  <p class="note" id="relayInfo" style="text-align:center;margin-top:18px"></p>
+</main>
+
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // Starter Deck v1.0: 52 original questions, approved 2026-11-09. Wording is frozen; do not edit in place.
+  var DECK = [
+    ["SD1-001", "Memories", "Light", "What smell takes you straight back to a particular place or time?"],
+    ["SD1-002", "Memories", "Light", "What is the best day you can remember from when you were younger, and what made it so good?"],
+    ["SD1-003", "Memories", "Light", "Which meal from your past would you happily eat again tomorrow, and who made it?"],
+    ["SD1-004", "Memories", "Medium", "What is something you used to be afraid of that no longer bothers you?"],
+    ["SD1-005", "Memories", "Light", "Think of a time you got completely lost. How did you find your way?"],
+    ["SD1-006", "Memories", "Medium", "What did you own as a child that meant the world to you, and why?"],
+    ["SD1-007", "Memories", "Medium", "Who taught you something you still use today, and what was it?"],
+    ["SD1-008", "Memories", "Deep", "What is a mistake you made that you are now glad you made?"],
+    ["SD1-009", "Everyday Life", "Light", "Which small daily habit makes the biggest difference to your mood?"],
+    ["SD1-010", "Everyday Life", "Light", "Which chore do you secretly enjoy, and which would you hand to a robot first?"],
+    ["SD1-011", "Everyday Life", "Light", "What does your perfect lazy day look like, hour by hour?"],
+    ["SD1-012", "Everyday Life", "Medium", "What is a skill you use every day that nobody ever formally taught you?"],
+    ["SD1-013", "Everyday Life", "Medium", "What ordinary thing do you think deserves far more appreciation?"],
+    ["SD1-014", "Everyday Life", "Light", "If you could remove one everyday annoyance from the world, what would it be?"],
+    ["SD1-015", "Everyday Life", "Light", "What is the strangest food combination you actually enjoy?"],
+    ["SD1-016", "Imagination", "Light", "You can spend one day doing any job except your own. Which job do you pick, and what do you do first?"],
+    ["SD1-017", "Imagination", "Light", "If you could add one new holiday to the calendar, what would it celebrate and how would people mark it?"],
+    ["SD1-018", "Imagination", "Light", "If you could talk with one kind of animal for a day, which would you choose and what would you ask first?"],
+    ["SD1-019", "Imagination", "Medium", "If you could spend a week in any period of history, when would you go and what would you hope to learn?"],
+    ["SD1-020", "Imagination", "Medium", "You are given an empty building and unlimited supplies. What would you create to help your community?"],
+    ["SD1-021", "Imagination", "Medium", "If you could instantly master any skill, which would you choose, and how would you use it?"],
+    ["SD1-022", "Imagination", "Deep", "If you could send one message that everyone on Earth would hear, what would you say?"],
+    ["SD1-023", "Imagination", "Medium", "What would you invent to make everyday life a little kinder?"],
+    ["SD1-024", "Values", "Medium", "What is a rule you live by that you worked out for yourself?"],
+    ["SD1-025", "Values", "Deep", "When, if ever, is it okay to break a promise?"],
+    ["SD1-026", "Values", "Medium", "What does fairness mean to you, and when have you seen it done well?"],
+    ["SD1-027", "Values", "Deep", "What is something you would never trade for money?"],
+    ["SD1-028", "Values", "Deep", "Think of a time it was hard to tell the truth. What happened?"],
+    ["SD1-029", "Values", "Medium", "What do you think people worry about more than they need to?"],
+    ["SD1-030", "Values", "Deep", "What makes someone brave, in your opinion?"],
+    ["SD1-031", "People", "Light", "Who makes you laugh the most, and what do they do that does it?"],
+    ["SD1-032", "People", "Medium", "What is a kind thing someone did for you that you still think about?"],
+    ["SD1-033", "People", "Medium", "Think of someone you spend time with often. What do you appreciate about them that they might not know?"],
+    ["SD1-034", "People", "Medium", "What is the best advice you have ever been given, and who gave it?"],
+    ["SD1-035", "People", "Light", "What do you do to cheer someone up when they are having a rough day?"],
+    ["SD1-036", "People", "Deep", "Is there someone you have never properly thanked? What would you say to them?"],
+    ["SD1-037", "People", "Medium", "What tradition in your family or friend group do you hope never ends?"],
+    ["SD1-038", "People", "Deep", "What is something people often misunderstand about you?"],
+    ["SD1-039", "Growth", "Medium", "What are you learning right now, and what keeps you going when it gets hard?"],
+    ["SD1-040", "Growth", "Medium", "What is a goal you have been quietly working toward?"],
+    ["SD1-041", "Growth", "Medium", "What is the most recent thing that surprised you about yourself?"],
+    ["SD1-042", "Growth", "Light", "When did you last do something for the very first time? How did it feel?"],
+    ["SD1-043", "Growth", "Deep", "What is a compliment you find hard to believe, and why?"],
+    ["SD1-044", "Growth", "Deep", "What would you tell your younger self on a day they felt nervous?"],
+    ["SD1-045", "Growth", "Medium", "What would you like to be better at a year from now, and what is the first step?"],
+    ["SD1-046", "Joy and Gratitude", "Light", "What is the best thing that happened to you this week?"],
+    ["SD1-047", "Joy and Gratitude", "Light", "Where do you go to feel calm, and what is it about that place?"],
+    ["SD1-048", "Joy and Gratitude", "Light", "What are three things you are grateful for today?"],
+    ["SD1-049", "Joy and Gratitude", "Light", "What makes you lose track of time?"],
+    ["SD1-050", "Joy and Gratitude", "Light", "When did you last laugh until it hurt? What was so funny?"],
+    ["SD1-051", "Joy and Gratitude", "Medium", "What act of kindness from a stranger do you still remember?"],
+    ["SD1-052", "Joy and Gratitude", "Medium", "If today were a chapter in your life story, what would you title it?"]
+  ];
+  var DEPTHS = ["Light", "Medium", "Deep"];
+  var CODE_LEN = 5;
+  var CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ";
+  var EMOJIS = ["😂", "🥹", "🤔", "🔥", "❤️", "😭", "👏"];
+
+  function $(id) { return document.getElementById(id); }
+
+  // ---------- connection ----------
+  // Messages travel through public relay servers (MQTT over secure WebSocket), so the two
+  // players can be on any two networks. Each message is encrypted with a key made from the
+  // room code, sent through every relay that is reachable, and re-sent until it is confirmed.
+  var BROKERS = [
+    "wss://broker.emqx.io:8084/mqtt",
+    "wss://broker.hivemq.com:8884/mqtt",
+    "wss://test.mosquitto.org:8081/mqtt"
+  ];
+  var enc = new TextEncoder(), dec = new TextDecoder();
+  var net = freshNet();
+
+  function freshNet() {
+    return {
+      clients: [], isHost: false, code: "", linked: false,
+      myId: Math.random().toString(36).slice(2, 10), peerId: null,
+      key: null, topicIn: "", topicOut: "",
+      seq: 0, delivered: 0, buffer: {}, outbox: {},
+      lastSeen: 0, quiet: false, timer: null, helloTimer: null, ready: false,
+      chain: Promise.resolve()
+    };
+  }
+
+  function deriveRoom(code) {
+    return crypto.subtle.importKey("raw", enc.encode(code), "PBKDF2", false, ["deriveBits"])
+      .then(function (base) {
+        return crypto.subtle.deriveBits(
+          { name: "PBKDF2", hash: "SHA-256", salt: enc.encode("talk-cards-room-v1"), iterations: 150000 }, base, 384);
+      })
+      .then(function (bits) {
+        var bytes = new Uint8Array(bits), hex = "";
+        for (var i = 32; i < 48; i++) hex += ("0" + bytes[i].toString(16)).slice(-2);
+        return crypto.subtle.importKey("raw", bytes.slice(0, 32), "AES-GCM", false, ["encrypt", "decrypt"])
+          .then(function (key) { return { key: key, topic: "talkcards1/" + hex }; });
+      });
+  }
+
+  function seal(key, obj) {
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, enc.encode(JSON.stringify(obj))).then(function (ct) {
+      var out = new Uint8Array(12 + ct.byteLength), s = "";
+      out.set(iv); out.set(new Uint8Array(ct), 12);
+      for (var i = 0; i < out.length; i++) s += String.fromCharCode(out[i]);
+      return btoa(s);
+    });
+  }
+
+  function unseal(key, str) {
+    var bin = atob(str), buf = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, key, buf.slice(12))
+      .then(function (pt) { return JSON.parse(dec.decode(pt)); });
+  }
+
+  // kind: hello | ack | ping | msg. Only "msg" carries a sequence number and game data.
+  function post(kind, seq, body) {
+    var me = net;
+    if (!me.key) return;
+    me.chain = me.chain.then(function () {
+      return seal(me.key, { f: me.myId, k: kind, s: seq || 0, a: me.delivered, b: body === undefined ? null : body });
+    }).then(function (str) {
+      me.clients.forEach(function (c) { if (c.connected) c.publish(me.topicOut, str, { qos: 1 }); });
+    }).catch(function () {});
+  }
+
+  function send(msg) {
+    var s = ++net.seq;
+    net.outbox[s] = { body: msg, t: Date.now() };
+    post("msg", s, msg);
+  }
+
+  function incoming(me, payload) {
+    unseal(me.key, payload.toString()).then(function (env) {
+      if (me !== net || !env || env.f === me.myId) return;
+      if (!me.peerId) {
+        if ((me.isHost && env.k === "hello") || (!me.isHost && env.k === "ack")) me.peerId = env.f;
+        else return;
+      }
+      if (env.f !== me.peerId) return;
+      me.lastSeen = Date.now();
+      if (me.quiet) { me.quiet = false; linkNote(""); }
+      Object.keys(me.outbox).forEach(function (s) { if (Number(s) <= env.a) delete me.outbox[s]; });
+      if (env.k === "hello") { if (me.isHost) { post("ack"); onLinked(); } return; }
+      if (env.k === "ack") { onLinked(); return; }
+      if (env.k === "msg" && env.s > me.delivered) {
+        me.buffer[env.s] = env.b;
+        while (me.buffer[me.delivered + 1] !== undefined) {
+          var b = me.buffer[me.delivered + 1];
+          delete me.buffer[me.delivered + 1];
+          me.delivered++;
+          handle(b);
+        }
+      }
+    }).catch(function () { /* not for this room, or not readable: ignore */ });
+  }
+
+  function tick(me) {
+    if (me !== net || !me.linked) return;
+    var now = Date.now(), resent = false;
+    Object.keys(me.outbox).forEach(function (s) {
+      var o = me.outbox[s];
+      if (now - o.t > 3000) { o.t = now; post("msg", Number(s), o.body); resent = true; }
+    });
+    if (!resent) post("ping");
+    if (!me.quiet && now - me.lastSeen > 15000) {
+      me.quiet = true;
+      linkNote("The other player seems to be offline. Waiting for them to come back…");
+    }
+  }
+
+  function makeCode() {
+    var s = "";
+    for (var i = 0; i < CODE_LEN; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    return s;
+  }
+
+  function lobbyMsg(text) { $("lobbyMsg").textContent = text || ""; }
+  function linkNote(text) { $("linkNote").textContent = text || ""; }
+
+  function showWaiting(code) {
+    $("lobbyChoices").classList.add("hidden");
+    $("waiting").classList.remove("hidden");
+    $("bigCode").textContent = code;
+  }
+
+  function resetLobby(message) {
+    teardown();
+    $("lobby").classList.remove("hidden");
+    $("game").classList.add("hidden");
+    $("roomTag").classList.add("hidden");
+    $("lobbyChoices").classList.remove("hidden");
+    $("waiting").classList.add("hidden");
+    $("createBtn").disabled = false;
+    $("joinBtn").disabled = false;
+    linkNote("");
+    relayInfo();
+    $("joinCancel").classList.add("hidden");
+    $("inviteBtn").textContent = "Copy invite link";
+    lobbyMsg(message);
+  }
+
+  function teardown() {
+    var old = net;
+    clearInterval(old.timer);
+    clearInterval(old.helloTimer);
+    old.clients.forEach(function (c) { try { c.end(true); } catch (e) {} });
+    net = freshNet();
+  }
+
+  function onLinked() {
+    if (net.linked) return;
+    net.linked = true;
+    net.lastSeen = Date.now();
+    $("lobby").classList.add("hidden");
+    $("joinCancel").classList.add("hidden");
+    $("game").classList.remove("hidden");
+    $("roomTag").classList.remove("hidden");
+    $("roomTagCode").textContent = net.code;
+    $("chatLog").textContent = "";
+    sysLine("Connected. Pick a game to start.");
+    newGame();
+  }
+
+  // Opens a connection to every relay. Also used to reconnect after the page was in the background.
+  function connectBrokers(me) {
+    me.clients.forEach(function (c) { try { c.end(true); } catch (e) {} });
+    me.clients = [];
+    BROKERS.forEach(function (url) {
+      var c = mqtt.connect(url, {
+        clientId: "sb-" + me.myId + "-" + Math.random().toString(36).slice(2, 6),
+        clean: true, connectTimeout: 8000, reconnectPeriod: 3000, keepalive: 30
+      });
+      me.clients.push(c);
+      c.on("connect", function () {
+        c.subscribe(me.topicIn, { qos: 1 }, function (err) {
+          if (err || me !== net) return;
+          relayInfo();
+          if (!me.ready) { me.ready = true; onRelayReady(me); }
+          else if (me.linked) flush(me);
+          else if (!me.isHost) post("hello");
+        });
+      });
+      c.on("close", relayInfo);
+      c.on("message", function (topic, payload) { if (me === net) incoming(me, payload); });
+      c.on("error", function () {});
+    });
+  }
+
+  // Re-send everything not yet confirmed, right now.
+  function flush(me) {
+    Object.keys(me.outbox).forEach(function (s) { me.outbox[s].t = 0; });
+    tick(me);
+  }
+
+  function relayInfo() {
+    var n = net.clients.filter(function (c) { return c.connected; }).length;
+    $("relayInfo").textContent = net.key ? "Relay servers connected: " + n + " of " + BROKERS.length : "";
+  }
+
+  function inviteLink() { return location.origin + location.pathname + "?room=" + net.code; }
+
+  function openRoom(isHost, code) {
+    teardown();
+    var me = net;
+    me.isHost = isHost;
+    me.code = code;
+    $("createBtn").disabled = true;
+    $("joinBtn").disabled = true;
+    if (typeof mqtt === "undefined" || !window.crypto || !crypto.subtle) {
+      resetLobby("Could not load the connection library. Check your internet and reload the page.");
+      return;
+    }
+    lobbyMsg(isHost ? "Setting up the room…" : "Joining room " + code + "…");
+    $("joinCancel").classList.toggle("hidden", isHost);
+    deriveRoom(code).then(function (room) {
+      if (me !== net) return;
+      me.key = room.key;
+      me.topicIn = room.topic + (isHost ? "/g" : "/h");
+      me.topicOut = room.topic + (isHost ? "/h" : "/g");
+      connectBrokers(me);
+      setTimeout(function () {
+        if (me === net && !me.ready) resetLobby("Could not reach the game relay. Check your internet and try again.");
+      }, 15000);
+    }).catch(function () {
+      if (me === net) resetLobby("Could not set up the room in this browser. Try a different browser.");
+    });
+  }
+
+  function onRelayReady(me) {
+    me.timer = setInterval(function () { tick(me); }, 4000);
+    if (me.isHost) { lobbyMsg(""); showWaiting(me.code); return; }
+    var tries = 0;
+    post("hello");
+    me.helloTimer = setInterval(function () {
+      if (me !== net || me.linked) { clearInterval(me.helloTimer); return; }
+      tries++;
+      if (tries === 6) lobbyMsg("Still looking for room " + me.code + "… Ask the other player to open their game page and keep it on screen.");
+      if (tries > 120) {
+        clearInterval(me.helloTimer);
+        resetLobby("No room found with code " + me.code + ". Check the code and try again.");
+        return;
+      }
+      post("hello");
+    }, 1500);
+  }
+
+  function createRoom() { lobbyMsg(""); openRoom(true, makeCode()); }
+
+  function joinRoom() {
+    var code = $("codeInput").value.trim().toUpperCase();
+    if (code.length !== CODE_LEN) { lobbyMsg("Enter the " + CODE_LEN + "-letter room code."); return; }
+    openRoom(false, code);
+  }
+
+  // ---------- game state ----------
+  // The room creator ("host") holds the real state. Both players send actions; the host
+  // applies them and sends the result to the guest, so both screens always agree.
+  var S = null;
+
+  function freshState() {
+    return {
+      phase: "setup",                 // setup | play | done
+      mode: "talk",                   // talk | guess
+      depths: { Light: true, Medium: true, Deep: true },
+      deck: [], pos: 0, played: 0, skipped: 0,
+      first: "host",                  // talk: who answers first. guess: whose real answer it is.
+      answers: { host: null, guest: null }, revealed: false, verdict: null,
+      scores: { host: 0, guest: 0 }
+    };
+  }
+
+  function newGame() {
+    S = null;
+    if (net.isHost) { S = freshState(); sync(); }
+    else render();
+  }
+
+  function pool(depths) {
+    var out = [];
+    DECK.forEach(function (c, i) { if (depths[c[2]]) out.push(i); });
+    return out;
+  }
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i];
+      a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function resetRound() { S.answers = { host: null, guest: null }; S.revealed = false; S.verdict = null; }
+
+  function apply(a, who) {
+    if (!S || !a || typeof a.k !== "string") return;
+    var other = who === "host" ? "guest" : "host";
+    switch (a.k) {
+      case "mode":
+        if (S.phase === "setup" && (a.v === "talk" || a.v === "guess")) S.mode = a.v;
+        break;
+      case "depth":
+        if (S.phase === "setup" && DEPTHS.indexOf(a.v) >= 0) {
+          S.depths[a.v] = !S.depths[a.v];
+          if (!pool(S.depths).length) S.depths[a.v] = true;   // keep at least one level on
+        }
+        break;
+      case "start":
+        if (S.phase !== "setup") break;
+        S.deck = shuffle(pool(S.depths));
+        S.pos = 0; S.played = 0; S.skipped = 0;
+        S.first = Math.random() < 0.5 ? "host" : "guest";
+        S.scores = { host: 0, guest: 0 };
+        resetRound();
+        S.phase = "play";
+        break;
+      case "skip":   // needs another card to take its place, and is not allowed once answers are shown
+        if (S.phase === "play" && S.pos < S.deck.length - 1 && !S.revealed) { S.skipped++; S.pos++; resetRound(); }
+        break;
+      case "next":
+        if (S.phase !== "play") break;
+        if (S.mode === "guess" && S.verdict === null) break;
+        S.played++;
+        if (S.pos >= S.deck.length - 1) S.phase = "done";
+        else { S.pos++; S.first = S.first === "host" ? "guest" : "host"; resetRound(); }
+        break;
+      case "answer":
+        if (S.phase === "play" && S.mode === "guess" && !S.revealed && typeof a.v === "string" && a.v.trim()) {
+          S.answers[who] = a.v.trim().slice(0, 300);
+          if (S.answers.host !== null && S.answers.guest !== null) S.revealed = true;
+        }
+        break;
+      case "verdict":   // only the person the card is about decides
+        if (S.phase === "play" && S.mode === "guess" && S.revealed && S.verdict === null && who === S.first) {
+          S.verdict = !!a.v;
+          if (S.verdict) S.scores[other]++;
+        }
+        break;
+      case "end":
+        if (S.phase === "play") S.phase = "done";
+        break;
+      case "again":
+        if (S.phase === "done") { var d = S.depths, m = S.mode; S = freshState(); S.depths = d; S.mode = m; }
+        break;
+    }
+    sync();
+  }
+
+  // What the guest is allowed to see: the host's answer stays sealed until both are in.
+  function guestView() {
+    var v = JSON.parse(JSON.stringify(S));
+    if (!v.revealed && v.answers.host !== null) v.answers.host = true;
+    return v;
+  }
+
+  function sync() { send({ t: "state", s: guestView() }); render(); }
+
+  function act(a) {
+    if (net.isHost) apply(a, "host");
+    else send({ t: "act", a: a });
+  }
+
+  function handle(m) {
+    if (!m || typeof m.t !== "string") return;
+    if (m.t === "chat") { if (typeof m.text === "string") chatLine("Them: " + m.text.slice(0, 300), ""); return; }
+    if (net.isHost) { if (m.t === "act") apply(m.a, "guest"); }
+    else if (m.t === "state" && m.s) { S = m.s; render(); }
+  }
+
+  // ---------- rendering ----------
+  var lastRound = "";
+
+  function show(id, on) { $(id).classList.toggle("hidden", !on); }
+
+  function render() {
+    show("loadingPanel", !S);
+    show("setupPanel", !!S && S.phase === "setup");
+    show("playPanel", !!S && S.phase === "play");
+    show("donePanel", !!S && S.phase === "done");
+    if (!S) return;
+    var me = net.isHost ? "host" : "guest", them = net.isHost ? "guest" : "host";
+
+    if (S.phase === "setup") {
+      $("modeTalk").classList.toggle("selected", S.mode === "talk");
+      $("modeGuess").classList.toggle("selected", S.mode === "guess");
+      Array.prototype.forEach.call($("depthChips").children, function (b) {
+        b.classList.toggle("on", !!S.depths[b.dataset.depth]);
+        b.setAttribute("aria-pressed", S.depths[b.dataset.depth] ? "true" : "false");
+      });
+      var n = pool(S.depths).length;
+      $("deckCount").textContent = n + " of " + DECK.length + " cards in play.";
+      return;
+    }
+
+    if (S.phase === "done") {
+      if (S.mode === "guess") {
+        var a = S.scores[me], b = S.scores[them];
+        $("doneLine").textContent = a === b ? "It's a tie, " + a + " each. You know each other equally well."
+          : a > b ? "You win " + a + " to " + b + ". You know them better!"
+          : "They win " + b + " to " + a + ". They know you better!";
+      } else {
+        $("doneLine").textContent = "You talked through " + S.played + (S.played === 1 ? " card." : " cards.");
+      }
+      $("doneNote").textContent = S.skipped ? "Cards skipped: " + S.skipped + "." : "";
+      return;
+    }
+
+    // play
+    var card = DECK[S.deck[S.pos]];
+    var guess = S.mode === "guess";
+    var round = S.pos + "|" + S.deck.length + "|" + S.mode;
+    if (round !== lastRound) { lastRound = round; $("answerInput").value = ""; }
+
+    $("progress").textContent = "Card " + (S.pos + 1) + " of " + S.deck.length;
+    $("score").textContent = guess ? "Right guesses · You " + S.scores[me] + " · Them " + S.scores[them] : "";
+    $("cardCat").textContent = card[1];
+    $("cardDepth").textContent = card[2];
+    $("cardQ").textContent = card[3];
+    $("cardId").textContent = card[0];
+
+    show("guessBox", guess);
+    var canNext = true;
+    if (!guess) {
+      $("turnLine").textContent = S.first === me ? "You answer first, then them." : "They answer first, then you.";
+    } else {
+      var aboutMe = S.first === me;
+      var mine = S.answers[me] !== null, theirs = S.answers[them] !== null;
+      canNext = S.verdict !== null;
+      show("answerForm", !S.revealed && !mine);
+      show("guessWait", !S.revealed);
+      show("revealBox", S.revealed);
+      show("verdictRow", S.revealed && S.verdict === null && aboutMe);
+      show("verdictLine", S.revealed);
+      if (!S.revealed) {
+        $("turnLine").textContent = aboutMe ? "This card is about you. Type your real answer." : "This card is about them. Guess what they will say.";
+        $("answerInput").placeholder = aboutMe ? "My real answer…" : "I think they will say…";
+        $("guessWait").textContent = mine
+          ? "Locked in. Waiting for them…"
+          : theirs ? "They have locked in. Your turn!" : "Answers stay hidden until you have both locked in.";
+      } else {
+        var real = S.answers[S.first], gs = S.answers[S.first === "host" ? "guest" : "host"];
+        $("turnLine").textContent = "Both answers are in!";
+        $("realLabel").textContent = aboutMe ? "Your real answer" : "Their real answer";
+        $("guessLabel").textContent = aboutMe ? "Their guess" : "Your guess";
+        $("realText").textContent = real;
+        $("guessText").textContent = gs;
+        var vl = $("verdictLine");
+        if (S.verdict === null) { vl.textContent = aboutMe ? "Did they get it?" : "Waiting for them to decide if you got it…"; vl.className = "status"; }
+        else if (S.verdict) { vl.textContent = aboutMe ? "✓ They got it! Point to them." : "✓ You got it! Point to you."; vl.className = "status good"; }
+        else { vl.textContent = aboutMe ? "✗ Not this time. No point." : "✗ Not quite. No point."; vl.className = "status bad"; }
+      }
+    }
+    var last = S.pos >= S.deck.length - 1;
+    $("nextBtn").disabled = !canNext;
+    $("nextBtn").textContent = last ? "Finish" : "Next card";
+    show("skipBtn", !last && !S.revealed);
+  }
+
+  // ---------- chat ----------
+  function chatLine(text, cls) {
+    var d = document.createElement("div");
+    d.textContent = text;
+    if (cls) d.className = cls;
+    var log = $("chatLog");
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+  function sysLine(text) { chatLine(text, "sys"); }
+  function sendChat(text) {
+    text = String(text).trim().slice(0, 300);
+    if (!text) return;
+    send({ t: "chat", text: text });
+    chatLine("You: " + text, "me");
+  }
+
+  // ---------- wiring ----------
+  DEPTHS.forEach(function (d) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.depth = d; b.textContent = d;
+    b.addEventListener("click", function () { act({ k: "depth", v: d }); });
+    $("depthChips").appendChild(b);
+  });
+  $("modeTalk").addEventListener("click", function () { act({ k: "mode", v: "talk" }); });
+  $("modeGuess").addEventListener("click", function () { act({ k: "mode", v: "guess" }); });
+  $("startBtn").addEventListener("click", function () { act({ k: "start" }); });
+  $("nextBtn").addEventListener("click", function () { act({ k: "next" }); });
+  $("skipBtn").addEventListener("click", function () { act({ k: "skip" }); });
+  $("endBtn").addEventListener("click", function () { act({ k: "end" }); });
+  $("againBtn").addEventListener("click", function () { act({ k: "again" }); });
+  $("answerBtn").addEventListener("click", function () {
+    var v = $("answerInput").value.trim();
+    if (v) act({ k: "answer", v: v });
+  });
+  $("matchBtn").addEventListener("click", function () { act({ k: "verdict", v: true }); });
+  $("missBtn").addEventListener("click", function () { act({ k: "verdict", v: false }); });
+
+  $("createBtn").addEventListener("click", createRoom);
+  $("joinBtn").addEventListener("click", joinRoom);
+  $("cancelBtn").addEventListener("click", function () { resetLobby(""); });
+  $("leaveBtn").addEventListener("click", function () { resetLobby(""); });
+  $("joinCancel").addEventListener("click", function () { resetLobby(""); });
+  $("codeInput").addEventListener("keydown", function (e) { if (e.key === "Enter") joinRoom(); });
+  $("codeInput").addEventListener("input", function () {
+    this.value = this.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, CODE_LEN);
+  });
+  $("inviteBtn").addEventListener("click", function () {
+    var url = inviteLink();
+    var done = function () { $("inviteBtn").textContent = "Link copied!"; $("inviteNote").textContent = "Paste it in a message to the other player."; };
+    var fallback = function () { $("inviteNote").textContent = url; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+    else fallback();
+  });
+
+  // Phones pause a page when you switch apps. Reconnect when it comes back.
+  var hiddenAt = 0;
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (net.key && hiddenAt && Date.now() - hiddenAt > 4000) connectBrokers(net);
+  });
+
+  $("chatSend").addEventListener("click", function () { sendChat($("chatInput").value); $("chatInput").value = ""; });
+  $("chatInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { sendChat($("chatInput").value); $("chatInput").value = ""; }
+  });
+  EMOJIS.forEach(function (em) {
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = em;
+    b.setAttribute("aria-label", "Send " + em);
+    b.addEventListener("click", function () { sendChat(em); });
+    $("emojiRow").appendChild(b);
+  });
+
+  var invited = new URLSearchParams(location.search).get("room");
+  if (invited && new RegExp("^[A-Za-z]{" + CODE_LEN + "}$").test(invited)) {
+    $("codeInput").value = invited.toUpperCase();
+    joinRoom();
+  }
+
+  // test hook: lets an automated check read the state
+  window.__talkCards = { state: function () { return S; }, net: function () { return net; } };
+})();
+</script>
+</body>
+</html>
