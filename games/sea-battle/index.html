@@ -133,7 +133,7 @@
         <h2>Join a game</h2>
         <p>Type the code the other player sent you.</p>
         <div class="row">
-          <input type="text" id="codeInput" maxlength="5" placeholder="CODE" autocomplete="off" aria-label="Room code">
+          <input type="text" id="codeInput" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Room code">
           <button class="primary" id="joinBtn">Join</button>
         </div>
       </div>
@@ -141,10 +141,12 @@
     <div id="waiting" class="hidden">
       <h2>Your room code</h2>
       <div class="big-code" id="bigCode"></div>
-      <p class="note">Send this code to the other player. The game starts when they join. Keep this page open.</p>
-      <div class="row" style="margin-top:12px"><button id="cancelBtn">Cancel</button></div>
+      <p class="note">Send the code or the invite link to the other player. The game starts when they join. If you switch apps to send it, come back to this page afterwards.</p>
+      <div class="row" style="margin-top:12px"><button class="primary" id="inviteBtn">Copy invite link</button><button id="cancelBtn">Cancel</button></div>
+      <p class="note" id="inviteNote" style="overflow-wrap:anywhere"></p>
     </div>
     <p class="error" id="lobbyMsg" role="status"></p>
+    <button id="joinCancel" class="hidden">Cancel</button>
   </section>
 
   <!-- Game -->
@@ -186,6 +188,7 @@
       <div class="emoji-row" id="emojiRow"></div>
     </div>
   </section>
+  <p class="note" id="relayInfo" style="text-align:center;margin-top:18px"></p>
 </main>
 
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
@@ -225,7 +228,7 @@
       myId: Math.random().toString(36).slice(2, 10), peerId: null,
       key: null, topicIn: "", topicOut: "",
       seq: 0, delivered: 0, buffer: {}, outbox: {},
-      lastSeen: 0, quiet: false, timer: null, helloTimer: null,
+      lastSeen: 0, quiet: false, timer: null, helloTimer: null, ready: false,
       chain: Promise.resolve()
     };
   }
@@ -342,6 +345,9 @@
     $("createBtn").disabled = false;
     $("joinBtn").disabled = false;
     linkNote("");
+    relayInfo();
+    $("joinCancel").classList.add("hidden");
+    $("inviteBtn").textContent = "Copy invite link";
     lobbyMsg(message);
   }
 
@@ -358,6 +364,7 @@
     net.linked = true;
     net.lastSeen = Date.now();
     $("lobby").classList.add("hidden");
+    $("joinCancel").classList.add("hidden");
     $("game").classList.remove("hidden");
     $("roomTag").classList.remove("hidden");
     $("roomTagCode").textContent = net.code;
@@ -365,6 +372,44 @@
     sysLine("Connected. Place your ships!");
     newGame();
   }
+
+  // Opens a connection to every relay. Also used to reconnect after the page was in the background.
+  function connectBrokers(me) {
+    me.clients.forEach(function (c) { try { c.end(true); } catch (e) {} });
+    me.clients = [];
+    BROKERS.forEach(function (url) {
+      var c = mqtt.connect(url, {
+        clientId: "sb-" + me.myId + "-" + Math.random().toString(36).slice(2, 6),
+        clean: true, connectTimeout: 8000, reconnectPeriod: 3000, keepalive: 30
+      });
+      me.clients.push(c);
+      c.on("connect", function () {
+        c.subscribe(me.topicIn, { qos: 1 }, function (err) {
+          if (err || me !== net) return;
+          relayInfo();
+          if (!me.ready) { me.ready = true; onRelayReady(me); }
+          else if (me.linked) flush(me);
+          else if (!me.isHost) post("hello");
+        });
+      });
+      c.on("close", relayInfo);
+      c.on("message", function (topic, payload) { if (me === net) incoming(me, payload); });
+      c.on("error", function () {});
+    });
+  }
+
+  // Re-send everything not yet confirmed, right now.
+  function flush(me) {
+    Object.keys(me.outbox).forEach(function (s) { me.outbox[s].t = 0; });
+    tick(me);
+  }
+
+  function relayInfo() {
+    var n = net.clients.filter(function (c) { return c.connected; }).length;
+    $("relayInfo").textContent = net.key ? "Relay servers connected: " + n + " of " + BROKERS.length : "";
+  }
+
+  function inviteLink() { return location.origin + location.pathname + "?room=" + net.code; }
 
   function openRoom(isHost, code) {
     teardown();
@@ -378,31 +423,16 @@
       return;
     }
     lobbyMsg(isHost ? "Setting up the room…" : "Joining room " + code + "…");
+    $("joinCancel").classList.toggle("hidden", isHost);
     deriveRoom(code).then(function (room) {
       if (me !== net) return;
       me.key = room.key;
       me.topicIn = room.topic + (isHost ? "/g" : "/h");
       me.topicOut = room.topic + (isHost ? "/h" : "/g");
-      var ready = false;
-      BROKERS.forEach(function (url) {
-        var c = mqtt.connect(url, {
-          clientId: "sb-" + me.myId + "-" + Math.random().toString(36).slice(2, 6),
-          clean: true, connectTimeout: 8000, reconnectPeriod: 3000, keepalive: 30
-        });
-        me.clients.push(c);
-        c.on("connect", function () {
-          c.subscribe(me.topicIn, { qos: 1 }, function (err) {
-            if (err || me !== net || ready) return;
-            ready = true;
-            onRelayReady(me);
-          });
-        });
-        c.on("message", function (topic, payload) { if (me === net) incoming(me, payload); });
-        c.on("error", function () {});
-      });
+      connectBrokers(me);
       setTimeout(function () {
-        if (me === net && !ready) resetLobby("Could not reach the game relay. Check your internet and try again.");
-      }, 12000);
+        if (me === net && !me.ready) resetLobby("Could not reach the game relay. Check your internet and try again.");
+      }, 15000);
     }).catch(function () {
       if (me === net) resetLobby("Could not set up the room in this browser. Try a different browser.");
     });
@@ -415,9 +445,11 @@
     post("hello");
     me.helloTimer = setInterval(function () {
       if (me !== net || me.linked) { clearInterval(me.helloTimer); return; }
-      if (++tries > 10) {
+      tries++;
+      if (tries === 6) lobbyMsg("Still looking for room " + me.code + "… Ask the other player to open their game page and keep it on screen.");
+      if (tries > 120) {
         clearInterval(me.helloTimer);
-        resetLobby("No room found with code " + me.code + ". Check the code, and make sure the other player still has their page open.");
+        resetLobby("No room found with code " + me.code + ". Check the code and try again.");
         return;
       }
       post("hello");
@@ -740,6 +772,24 @@
   $("joinBtn").addEventListener("click", joinRoom);
   $("cancelBtn").addEventListener("click", function () { resetLobby(""); });
   $("leaveBtn").addEventListener("click", function () { resetLobby(""); });
+  $("joinCancel").addEventListener("click", function () { resetLobby(""); });
+  $("codeInput").addEventListener("input", function () {
+    this.value = this.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, CODE_LEN);
+  });
+  $("inviteBtn").addEventListener("click", function () {
+    var url = inviteLink();
+    var done = function () { $("inviteBtn").textContent = "Link copied!"; $("inviteNote").textContent = "Paste it in a message to the other player."; };
+    var fallback = function () { $("inviteNote").textContent = url; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+    else fallback();
+  });
+
+  // Phones pause a page when you switch apps. Reconnect when it comes back.
+  var hiddenAt = 0;
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (net.key && hiddenAt && Date.now() - hiddenAt > 4000) connectBrokers(net);
+  });
   $("codeInput").addEventListener("keydown", function (e) { if (e.key === "Enter") joinRoom(); });
 
   $("rotateBtn").addEventListener("click", function () { g.horizontal = !g.horizontal; render(); });
@@ -775,6 +825,12 @@
     b.addEventListener("click", function () { sendChat(em); });
     $("emojiRow").appendChild(b);
   });
+
+  var invited = new URLSearchParams(location.search).get("room");
+  if (invited && new RegExp("^[A-Za-z]{" + CODE_LEN + "}$").test(invited)) {
+    $("codeInput").value = invited.toUpperCase();
+    joinRoom();
+  }
 
   // test hook: lets an automated check read the state
   window.__seaBattle = { state: function () { return g; }, net: function () { return net; } };
