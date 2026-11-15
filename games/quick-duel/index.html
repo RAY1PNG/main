@@ -73,6 +73,12 @@
   .pad.count { background: var(--panel-2); font-size: 3rem; }
   .pad.tap { background: #3d6fe0; }
   .pad small { display: block; font-size: 1rem; font-weight: 500; opacity: 0.9; }
+  .prompt { font-size: 2.4rem; font-weight: 800; text-align: center; margin: 6px 0 14px; min-height: 1.4em; }
+  .opts { display: grid; gap: 10px; }
+  .opts.two { grid-template-columns: 1fr 1fr; }
+  .opts.two button { font-size: 1.4rem; font-weight: 700; padding: 20px 0; border-radius: 14px; }
+  .opts.four { grid-template-columns: repeat(4, 1fr); }
+  .opts.four button { font-size: 1.9rem; padding: 12px 0; border-radius: 12px; }
   .result { text-align: center; }
   .versus { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin: 6px 0 10px; }
   .versus > div { background: var(--panel-2); border-radius: 12px; padding: 12px 8px; }
@@ -150,8 +156,8 @@
 
       <!-- Before the first round -->
       <div id="setupBox" class="hidden">
-        <p class="game-title">Three tiny games, picked at random</p>
-        <p class="game-hint">Rock Paper Scissors · Reaction · Tap Sprint. Each round takes a few seconds.</p>
+        <p class="game-title">Seven tiny games, picked at random</p>
+        <p class="game-hint">Rock Paper Scissors · Reaction · Tap Sprint · Quick Maths · Colour Clash · Odd One Out · Stop the Clock. Each round takes a few seconds.</p>
         <div class="center" id="targetChips"></div>
         <div class="center" style="margin-top:14px"><button class="primary" id="startBtn">Start duel</button></div>
       </div>
@@ -165,6 +171,8 @@
           <button data-pick="p" aria-label="Paper">✋<span>Paper</span></button>
           <button data-pick="s" aria-label="Scissors">✌️<span>Scissors</span></button>
         </div>
+        <p class="prompt hidden" id="prompt"></p>
+        <div class="opts hidden" id="optBox"></div>
         <button class="pad hidden" id="pad"></button>
       </div>
 
@@ -199,8 +207,20 @@
 (function () {
   "use strict";
 
-  var GAMES = ["rps", "react", "tap"];
-  var TITLES = { rps: "Rock Paper Scissors", react: "Reaction", tap: "Tap Sprint" };
+  var GAMES = ["rps", "react", "tap", "math", "stroop", "odd", "stop"];
+  var CHOICE = ["math", "stroop", "odd"];     // games answered by tapping one of several options
+  var TITLES = { rps: "Rock Paper Scissors", react: "Reaction", tap: "Tap Sprint", math: "Quick Maths", stroop: "Colour Clash", odd: "Odd One Out", stop: "Stop the Clock" };
+  var HINTS = {
+    react: "Fastest tap wins. Tapping early loses the round.",
+    tap: "Most taps in 5 seconds wins.",
+    math: "Fastest correct answer wins. A wrong answer loses.",
+    stroop: "Tap the COLOUR the word is written in, not what it says.",
+    odd: "One of these is different. Find it first.",
+    stop: "The clock hides after 1.5 seconds. Closest to the target wins."
+  };
+  var CHOICE_MS = 8000, STOP_MISS = 4000;
+  var INKS = [["Red", "#ff5a4f"], ["Blue", "#4f8dff"], ["Green", "#3ecf6e"], ["Yellow", "#ffd84a"]];
+  var LOOKALIKES = [["😀", "😃"], ["🌕", "🌝"], ["🍎", "🍅"], ["⚽", "🏐"], ["🐻", "🐨"], ["🌲", "🌳"], ["🕐", "🕑"], ["🔒", "🔓"], ["🐸", "🐢"], ["🍋", "🍌"]];
   var ICON = { r: "✊", p: "✋", s: "✌️" };
   var BEATS = { r: "s", p: "r", s: "p" };
   var TARGETS = [3, 5];
@@ -492,7 +512,7 @@
     var options = GAMES.filter(function (g) { return g !== S.game; });
     S.round++;
     S.game = options[Math.floor(Math.random() * options.length)];
-    S.param = S.game === "react" ? 1500 + Math.floor(Math.random() * 3000) : 0;
+    S.param = Math.floor(Math.random() * 1000000);   // both devices build the same puzzle from this number
     S.sub = { host: null, guest: null };
     S.winner = null;
     S.phase = "round";
@@ -501,8 +521,8 @@
   function cleanResult(game, v) {
     if (game === "rps") return (v === "r" || v === "p" || v === "s") ? v : "none";
     v = Number(v);
-    if (!isFinite(v) || v < 0) v = game === "react" ? TOO_SLOW : 0;
-    return Math.round(Math.min(v, game === "react" ? FALSE_START : 999));
+    if (game === "tap") return isFinite(v) && v > 0 ? Math.round(Math.min(v, 999)) : 0;
+    return isFinite(v) && v >= 0 ? Math.round(Math.min(v, FALSE_START)) : FALSE_START;
   }
 
   function resolve() {
@@ -513,11 +533,12 @@
         else if (b === "none") w = "host";
         else w = BEATS[a] === b ? "host" : "guest";
       }
-    } else if (S.game === "react") {
-      if (a !== b) w = a < b ? "host" : "guest";
-      if (a >= TOO_SLOW && b >= TOO_SLOW) w = "tie";      // nobody made a real tap
-    } else {
+    } else if (S.game === "tap") {
       if (a !== b) w = a > b ? "host" : "guest";
+    } else {                                              // lower is better
+      if (a !== b) w = a < b ? "host" : "guest";
+      var slow = S.game === "react" ? TOO_SLOW : CHOICE.indexOf(S.game) >= 0 ? CHOICE_MS : 0;
+      if (slow && a >= slow && b >= slow) w = "tie";      // nobody got it
     }
     S.winner = w;
     if (w !== "tie") S.scores[w]++;
@@ -572,7 +593,53 @@
   }
 
   // ---------- playing a round on this device ----------
-  var local = { round: 0, stage: "", timers: [], done: false, taps: 0, t0: 0 };
+  var local = { round: 0, stage: "", timers: [], done: false, taps: 0, t0: 0, q: null, target: 0, built: false };
+
+  // Small repeatable random generator, so both players get the same puzzle.
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function mix(list, r) {
+    for (var i = list.length - 1; i > 0; i--) {
+      var j = Math.floor(r() * (i + 1)), t = list[i];
+      list[i] = list[j]; list[j] = t;
+    }
+    return list;
+  }
+
+  function buildQuestion(game, seed) {
+    var r = rng(seed), pick = function (n) { return Math.floor(r() * n); };
+    if (game === "math") {
+      var kind = pick(3), x, y, ans, text;
+      if (kind === 0) { x = 6 + pick(40); y = 3 + pick(30); ans = x + y; text = x + " + " + y; }
+      else if (kind === 1) { x = 20 + pick(60); y = 3 + pick(17); ans = x - y; text = x + " − " + y; }
+      else { x = 2 + pick(8); y = 2 + pick(8); ans = x * y; text = x + " × " + y; }
+      var opts = [ans], deltas = mix([-10, -2, -1, 1, 2, 10], r);
+      for (var i = 0; opts.length < 4; i++) if (ans + deltas[i] >= 0) opts.push(ans + deltas[i]);
+      mix(opts, r);
+      return { text: text, options: opts.map(String), correct: opts.indexOf(ans) };
+    }
+    if (game === "stroop") {
+      var word = pick(4), ink = (word + 1 + pick(3)) % 4;
+      var order = mix([0, 1, 2, 3], r);
+      return { text: INKS[word][0].toUpperCase(), color: INKS[ink][1], options: order.map(function (k) { return INKS[k][0]; }), correct: order.indexOf(ink) };
+    }
+    var pair = LOOKALIKES[pick(LOOKALIKES.length)], flip = pick(2), where = pick(16), cells = [];
+    for (var c = 0; c < 16; c++) cells.push(c === where ? pair[1 - flip] : pair[flip]);
+    return { text: "Which one is different?", options: cells, correct: where };
+  }
+
+  function choose(i) {
+    if (local.done || local.stage !== "go" || !local.q) return;
+    submit(i === local.q.correct ? Math.round(performance.now() - local.t0) : FALSE_START);
+  }
 
   function stopLocal() {
     local.timers.forEach(function (t) { clearTimeout(t); clearInterval(t); });
@@ -592,7 +659,7 @@
 
   function startLocal() {
     stopLocal();
-    local = { round: S.round, stage: "", timers: [], done: false, taps: 0, t0: 0 };
+    local = { round: S.round, stage: "", timers: [], done: false, taps: 0, t0: 0, q: null, target: 0, built: false };
     if (S.game === "rps") {
       local.stage = "pick";
       later(function () { submit("none"); }, RPS_MS);
@@ -603,7 +670,26 @@
         local.t0 = performance.now();
         later(function () { submit(TOO_SLOW); }, TOO_SLOW);
         render();
-      }, S.param);
+      }, 1500 + S.param % 3000);
+    } else if (CHOICE.indexOf(S.game) >= 0) {
+      local.stage = "ready";
+      local.q = buildQuestion(S.game, S.param);
+      later(function () {
+        local.stage = "go";
+        local.t0 = performance.now();
+        later(function () { submit(CHOICE_MS); }, CHOICE_MS);
+        render();
+      }, 1200);
+    } else if (S.game === "stop") {
+      local.stage = "ready";
+      local.target = 3000 + (S.param % 4) * 1000;       // 3, 4, 5 or 6 seconds
+      later(function () {
+        local.stage = "run";
+        local.t0 = performance.now();
+        local.timers.push(setInterval(renderPad, 60));
+        later(function () { submit(STOP_MISS); }, local.target + STOP_MISS);
+        render();
+      }, 1200);
     } else {
       local.stage = "3";
       later(function () { local.stage = "2"; render(); }, 800);
@@ -622,6 +708,8 @@
     if (S.game === "react") {
       if (local.stage === "wait") submit(FALSE_START);
       else if (local.stage === "go") submit(Math.round(performance.now() - local.t0));
+    } else if (S.game === "stop") {
+      if (local.stage === "run") submit(Math.round(Math.abs(performance.now() - local.t0 - local.target)));
     } else if (S.game === "tap" && local.stage === "tap") {
       local.taps++;
       renderPad();
@@ -634,6 +722,8 @@
   function describe(game, v) {
     if (game === "rps") return v === "none" ? "⏳" : ICON[v];
     if (game === "react") return v >= FALSE_START ? "Too early" : v >= TOO_SLOW ? "Too slow" : v + " ms";
+    if (game === "stop") return v >= STOP_MISS ? "Missed" : "off " + (v / 1000).toFixed(2) + " s";
+    if (CHOICE.indexOf(game) >= 0) return v >= FALSE_START ? "Wrong" : v >= CHOICE_MS ? "Too slow" : (v / 1000).toFixed(2) + " s";
     return v + (v === 1 ? " tap" : " taps");
   }
 
@@ -641,7 +731,12 @@
     var pad = $("pad"), g = S.game, st = local.stage;
     pad.textContent = "";
     var small = document.createElement("small");
-    if (g === "react") {
+    if (g === "stop") {
+      var el = performance.now() - local.t0;
+      pad.className = "pad " + (st === "run" ? "tap" : "count");
+      pad.appendChild(document.createTextNode(st !== "run" ? "…" : el < 1500 ? (el / 1000).toFixed(2) : "?"));
+      small.textContent = "Tap at exactly " + (local.target / 1000) + ".00 seconds";
+    } else if (g === "react") {
       pad.className = "pad " + (st === "go" ? "go" : "wait");
       pad.appendChild(document.createTextNode(st === "go" ? "TAP!" : "Wait…"));
       small.textContent = st === "go" ? "" : "Tap when this turns green";
@@ -655,6 +750,26 @@
       small.textContent = "Get ready to tap";
     }
     pad.appendChild(small);
+  }
+
+  function renderChoice() {
+    var p = $("prompt"), q = local.q;
+    if (local.stage !== "go") { p.textContent = "Get ready…"; p.style.color = ""; return; }
+    p.textContent = q.text;
+    p.style.color = q.color || "";
+    if (local.built) return;
+    local.built = true;
+    var box = $("optBox");
+    box.textContent = "";
+    box.className = "opts " + (S.game === "odd" ? "four" : "two");
+    q.options.forEach(function (label, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      b.addEventListener("pointerdown", function (e) { e.preventDefault(); choose(i); });
+      b.addEventListener("click", function () { choose(i); });
+      box.appendChild(b);
+    });
   }
 
   function render() {
@@ -681,18 +796,18 @@
       if (local.round !== S.round) startLocal();
       var sent = local.done;
       $("gameTitle").textContent = TITLES[S.game];
+      var choice = CHOICE.indexOf(S.game) >= 0;
       show("rpsBox", S.game === "rps" && !sent);
-      show("pad", S.game !== "rps" && !sent);
+      show("pad", S.game !== "rps" && !choice && !sent);
+      show("prompt", choice && !sent);
+      show("optBox", choice && !sent && local.stage === "go");
       if (sent) {
         $("gameHint").textContent = "Done! Waiting for them…";
       } else if (S.game === "rps") {
         $("gameHint").textContent = S.sub[them] !== null ? "They have picked. Your move!" : "Pick one. You have 10 seconds.";
-      } else if (S.game === "react") {
-        $("gameHint").textContent = "Fastest tap wins. Tapping early loses the round.";
-        renderPad();
       } else {
-        $("gameHint").textContent = "Most taps in 5 seconds wins.";
-        renderPad();
+        $("gameHint").textContent = HINTS[S.game];
+        if (choice) renderChoice(); else renderPad();
       }
       return;
     }
