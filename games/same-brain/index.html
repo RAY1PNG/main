@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Same Brain</title>
+<style>
+  :root {
+    --bg: #0f1a1c;
+    --panel: #172629;
+    --panel-2: #1f3337;
+    --line: #2f4a4f;
+    --text: #ecf6f5;
+    --muted: #92adae;
+    --accent: #ff7eb6;
+    --accent-ink: #3a0a22;
+    --good: #5fe0b0;
+    --warn: #ffb070;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  main { max-width: 620px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.6rem; margin: 0; }
+  h2 { font-size: 0.85rem; margin: 0 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .room-tag { color: var(--muted); font-size: 0.9rem; }
+  .room-tag b { color: var(--text); letter-spacing: 0.15em; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-top: 16px; }
+  .hidden { display: none !important; }
+  button {
+    font: inherit; color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  input[type=text] {
+    font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; min-width: 0;
+  }
+  input:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .center { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .lobby-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .lobby-choices > div { background: var(--panel-2); border-radius: 10px; padding: 16px; }
+  .lobby-choices p { margin: 0 0 12px; color: var(--muted); }
+  #codeInput { width: 8.5em; text-transform: uppercase; letter-spacing: 0.2em; text-align: center; }
+  .big-code { font-size: 2.4rem; font-weight: 800; letter-spacing: 0.3em; margin: 6px 0; }
+  .note { color: var(--muted); font-size: 0.9rem; margin: 6px 0 0; }
+  .error { color: var(--warn); margin: 10px 0 0; min-height: 1.4em; }
+
+  .topline { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; }
+  .prompt { font-size: 1.7rem; font-weight: 800; text-align: center; margin: 18px 0 6px; text-wrap: balance; }
+  .hint { color: var(--muted); text-align: center; margin: 0 0 14px; min-height: 1.5em; }
+  .word-row { display: flex; gap: 8px; }
+  .word-row input { flex: 1; font-size: 1.2rem; text-align: center; }
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 10px; }
+  .versus > div { background: var(--panel-2); border-radius: 12px; padding: 14px 8px; text-align: center; }
+  .versus .big { font-size: 1.5rem; font-weight: 800; overflow-wrap: anywhere; }
+  .versus .who { color: var(--muted); font-size: 0.85rem; }
+  .verdict { font-size: 1.3rem; font-weight: 800; text-align: center; margin: 0 0 12px; }
+  .verdict.yes { color: var(--good); }
+  .verdict.no { color: var(--warn); }
+  .dots { display: flex; gap: 6px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .dots span { width: 14px; height: 14px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); }
+  .dots span.yes { background: var(--good); border-color: var(--good); }
+  .dots span.no { background: var(--warn); border-color: var(--warn); }
+  .chip { border-radius: 999px; padding: 6px 14px; }
+  .chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
+  .chat-log {
+    height: 96px; overflow-y: auto; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font-size: 0.95rem;
+  }
+  .chat-log div { overflow-wrap: anywhere; }
+  .chat-log .me { color: var(--accent); }
+  .chat-log .sys { color: var(--muted); font-style: italic; }
+  .chat-row { display: flex; gap: 8px; margin-top: 8px; }
+  .chat-row input { flex: 1; }
+  .emoji-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .emoji-row button { padding: 4px 10px; font-size: 1.1rem; }
+
+  @media (max-width: 600px) { .lobby-choices { grid-template-columns: 1fr; } .prompt { font-size: 1.45rem; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🧠 Same Brain</h1>
+    <span class="room-tag hidden" id="roomTag">Room <b id="roomTagCode"></b> <button id="leaveBtn" style="margin-left:8px;padding:4px 10px">Leave</button></span>
+  </header>
+
+  <!-- Lobby -->
+  <section class="panel" id="lobby">
+    <div class="lobby-choices" id="lobbyChoices">
+      <div>
+        <h2>Start a game</h2>
+        <p>Get a room code and send it to the other player.</p>
+        <button class="primary" id="createBtn">Create room</button>
+      </div>
+      <div>
+        <h2>Join a game</h2>
+        <p>Type the code the other player sent you.</p>
+        <div class="row">
+          <input type="text" id="codeInput" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Room code">
+          <button class="primary" id="joinBtn">Join</button>
+        </div>
+      </div>
+    </div>
+    <div id="waiting" class="hidden">
+      <h2>Your room code</h2>
+      <div class="big-code" id="bigCode"></div>
+      <p class="note">Send the code or the invite link to the other player. The game starts when they join. If you switch apps to send it, come back to this page afterwards.</p>
+      <div class="row" style="margin-top:12px"><button class="primary" id="inviteBtn">Copy invite link</button><button id="cancelBtn">Cancel</button></div>
+      <p class="note" id="inviteNote" style="overflow-wrap:anywhere"></p>
+    </div>
+    <p class="error" id="lobbyMsg" role="status"></p>
+    <button id="joinCancel" class="hidden">Cancel</button>
+  </section>
+
+  <!-- Game -->
+  <section id="game" class="hidden">
+    <p class="error" id="linkNote" role="status" style="min-height:0"></p>
+
+    <div class="panel">
+      <div id="loadingBox"><p class="note" style="text-align:center">Getting ready…</p></div>
+
+      <div id="setupBox" class="hidden">
+        <p class="prompt">Can you two think alike?</p>
+        <p class="hint">You both get the same prompt and secretly type one word. Same word = a match. You are on the same team.</p>
+        <div class="center" id="lengthChips"></div>
+        <div class="center" style="margin-top:14px"><button class="primary" id="startBtn">Start</button></div>
+      </div>
+
+      <div id="playBox" class="hidden">
+        <div class="topline"><span id="progress"></span><span id="score"></span></div>
+        <p class="prompt" id="prompt"></p>
+        <p class="hint" id="hint" role="status"></p>
+
+        <div class="word-row" id="wordForm">
+          <input type="text" id="wordInput" maxlength="24" placeholder="One word…" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Your word">
+          <button class="primary" id="wordBtn">Lock in</button>
+        </div>
+
+        <div id="revealBox">
+          <div class="versus">
+            <div><div class="big" id="myWord"></div><div class="who">You</div></div>
+            <div><div class="big" id="theirWord"></div><div class="who">Them</div></div>
+          </div>
+          <p class="verdict" id="verdict" role="status"></p>
+          <div class="center">
+            <button id="countBtn">Close enough, count it</button>
+            <button class="primary" id="nextBtn">Next</button>
+          </div>
+        </div>
+        <div class="dots" id="dots"></div>
+      </div>
+
+      <div id="doneBox" class="hidden">
+        <p class="prompt" id="doneLine"></p>
+        <p class="hint" id="doneNote"></p>
+        <div class="dots" id="doneDots"></div>
+        <div class="center" style="margin-top:16px"><button class="primary" id="againBtn">Play again</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Chat</h2>
+      <div class="chat-log" id="chatLog" aria-live="polite"></div>
+      <div class="chat-row">
+        <input type="text" id="chatInput" maxlength="200" placeholder="Say something…" autocomplete="off" aria-label="Chat message">
+        <button id="chatSend">Send</button>
+      </div>
+      <div class="emoji-row" id="emojiRow"></div>
+    </div>
+  </section>
+  <p class="note" id="relayInfo" style="text-align:center;margin-top:18px"></p>
+</main>
+
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var PROMPTS = [
+    "A fruit", "A pizza topping", "Something you find at the beach", "A superpower", "An animal at the zoo",
+    "A colour", "Something cold", "A breakfast food", "A board or card game", "Something in a pencil case",
+    "A thing with wheels", "A country you want to visit", "An ice cream flavour", "Something you do when bored", "A sport",
+    "A musical instrument", "Something in the sky", "A hot drink", "An excuse for being late", "Something that smells good",
+    "A school subject", "Something you pack for a trip", "An animal that can fly", "Something round", "A day of the week",
+    "A vegetable", "Something scary", "A fast food item", "Something in a kitchen", "A pet",
+    "A season", "Something sweet", "A job", "Something you wear on your feet", "A type of weather",
+    "Something in a living room", "A number from 1 to 10", "A month", "Something soft", "A place to hang out",
+    "A late-night snack", "Something yellow", "A movie genre", "Something people lose a lot", "Something people collect",
+    "An ocean animal", "The first thing you do in the morning", "A chore", "Something that is always too expensive", "A thing you would grab in a fire",
+    "A cartoon animal", "Something you shout at a concert", "A word that means happy", "Something in a first aid kit", "A reason to celebrate",
+    "Something that takes forever", "A thing you do on a rainy day", "Something tiny", "A noise that is annoying", "A bubble tea topping"
+  ];
+  var LENGTHS = [5, 10];
+  var CODE_LEN = 5;
+  var CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ";
+  var EMOJIS = ["😂", "🤯", "🫶", "🔥", "💀", "👏", "🧠"];
+
+  function $(id) { return document.getElementById(id); }
+
+  // ---------- connection ----------
+  // Messages travel through public relay servers (MQTT over secure WebSocket), so the two
+  // players can be on any two networks. Each message is encrypted with a key made from the
+  // room code, sent through every relay that is reachable, and re-sent until it is confirmed.
+  var BROKERS = [
+    "wss://broker.emqx.io:8084/mqtt",
+    "wss://broker.hivemq.com:8884/mqtt",
+    "wss://test.mosquitto.org:8081/mqtt"
+  ];
+  var enc = new TextEncoder(), dec = new TextDecoder();
+  var net = freshNet();
+
+  function freshNet() {
+    return {
+      clients: [], isHost: false, code: "", linked: false,
+      myId: Math.random().toString(36).slice(2, 10), peerId: null,
+      key: null, topicIn: "", topicOut: "",
+      seq: 0, delivered: 0, buffer: {}, outbox: {},
+      lastSeen: 0, quiet: false, timer: null, helloTimer: null, ready: false,
+      chain: Promise.resolve()
+    };
+  }
+
+  function deriveRoom(code) {
+    return crypto.subtle.importKey("raw", enc.encode(code), "PBKDF2", false, ["deriveBits"])
+      .then(function (base) {
+        return crypto.subtle.deriveBits(
+          { name: "PBKDF2", hash: "SHA-256", salt: enc.encode("same-brain-room-v1"), iterations: 150000 }, base, 384);
+      })
+      .then(function (bits) {
+        var bytes = new Uint8Array(bits), hex = "";
+        for (var i = 32; i < 48; i++) hex += ("0" + bytes[i].toString(16)).slice(-2);
+        return crypto.subtle.importKey("raw", bytes.slice(0, 32), "AES-GCM", false, ["encrypt", "decrypt"])
+          .then(function (key) { return { key: key, topic: "samebrain1/" + hex }; });
+      });
+  }
+
+  function seal(key, obj) {
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, enc.encode(JSON.stringify(obj))).then(function (ct) {
+      var out = new Uint8Array(12 + ct.byteLength), s = "";
+      out.set(iv); out.set(new Uint8Array(ct), 12);
+      for (var i = 0; i < out.length; i++) s += String.fromCharCode(out[i]);
+      return btoa(s);
+    });
+  }
+
+  function unseal(key, str) {
+    var bin = atob(str), buf = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(0, 12) }, key, buf.slice(12))
+      .then(function (pt) { return JSON.parse(dec.decode(pt)); });
+  }
+
+  // kind: hello | ack | ping | msg. Only "msg" carries a sequence number and game data.
+  function post(kind, seq, body) {
+    var me = net;
+    if (!me.key) return;
+    me.chain = me.chain.then(function () {
+      return seal(me.key, { f: me.myId, k: kind, s: seq || 0, a: me.delivered, b: body === undefined ? null : body });
+    }).then(function (str) {
+      me.clients.forEach(function (c) { if (c.connected) c.publish(me.topicOut, str, { qos: 1 }); });
+    }).catch(function () {});
+  }
+
+  function send(msg) {
+    var s = ++net.seq;
+    net.outbox[s] = { body: msg, t: Date.now() };
+    post("msg", s, msg);
+  }
+
+  function incoming(me, payload) {
+    unseal(me.key, payload.toString()).then(function (env) {
+      if (me !== net || !env || env.f === me.myId) return;
+      if (!me.peerId) {
+        if ((me.isHost && env.k === "hello") || (!me.isHost && env.k === "ack")) me.peerId = env.f;
+        else return;
+      }
+      if (env.f !== me.peerId) return;
+      me.lastSeen = Date.now();
+      if (me.quiet) { me.quiet = false; linkNote(""); }
+      Object.keys(me.outbox).forEach(function (s) { if (Number(s) <= env.a) delete me.outbox[s]; });
+      if (env.k === "hello") { if (me.isHost) { post("ack"); onLinked(); } return; }
+      if (env.k === "ack") { onLinked(); return; }
+      if (env.k === "msg" && env.s > me.delivered) {
+        me.buffer[env.s] = env.b;
+        while (me.buffer[me.delivered + 1] !== undefined) {
+          var b = me.buffer[me.delivered + 1];
+          delete me.buffer[me.delivered + 1];
+          me.delivered++;
+          handle(b);
+        }
+      }
+    }).catch(function () { /* not for this room, or not readable: ignore */ });
+  }
+
+  function tick(me) {
+    if (me !== net || !me.linked) return;
+    var now = Date.now(), resent = false;
+    Object.keys(me.outbox).forEach(function (s) {
+      var o = me.outbox[s];
+      if (now - o.t > 3000) { o.t = now; post("msg", Number(s), o.body); resent = true; }
+    });
+    if (!resent) post("ping");
+    if (!me.quiet && now - me.lastSeen > 15000) {
+      me.quiet = true;
+      linkNote("The other player seems to be offline. Waiting for them to come back…");
+    }
+  }
+
+  function makeCode() {
+    var s = "";
+    for (var i = 0; i < CODE_LEN; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    return s;
+  }
+
+  function lobbyMsg(text) { $("lobbyMsg").textContent = text || ""; }
+  function linkNote(text) { $("linkNote").textContent = text || ""; }
+
+  function showWaiting(code) {
+    $("lobbyChoices").classList.add("hidden");
+    $("waiting").classList.remove("hidden");
+    $("bigCode").textContent = code;
+  }
+
+  function resetLobby(message) {
+    teardown();
+    $("lobby").classList.remove("hidden");
+    $("game").classList.add("hidden");
+    $("roomTag").classList.add("hidden");
+    $("lobbyChoices").classList.remove("hidden");
+    $("waiting").classList.add("hidden");
+    $("createBtn").disabled = false;
+    $("joinBtn").disabled = false;
+    linkNote("");
+    relayInfo();
+    $("joinCancel").classList.add("hidden");
+    $("inviteBtn").textContent = "Copy invite link";
+    lobbyMsg(message);
+  }
+
+  function teardown() {
+    var old = net;
+    clearInterval(old.timer);
+    clearInterval(old.helloTimer);
+    old.clients.forEach(function (c) { try { c.end(true); } catch (e) {} });
+    net = freshNet();
+  }
+
+  function onLinked() {
+    if (net.linked) return;
+    net.linked = true;
+    net.lastSeen = Date.now();
+    $("lobby").classList.add("hidden");
+    $("joinCancel").classList.add("hidden");
+    $("game").classList.remove("hidden");
+    $("roomTag").classList.remove("hidden");
+    $("roomTagCode").textContent = net.code;
+    $("chatLog").textContent = "";
+    sysLine("Connected. Let's see if you think alike.");
+    newGame();
+  }
+
+  // Opens a connection to every relay. Also used to reconnect after the page was in the background.
+  function connectBrokers(me) {
+    me.clients.forEach(function (c) { try { c.end(true); } catch (e) {} });
+    me.clients = [];
+    BROKERS.forEach(function (url) {
+      var c = mqtt.connect(url, {
+        clientId: "sb-" + me.myId + "-" + Math.random().toString(36).slice(2, 6),
+        clean: true, connectTimeout: 8000, reconnectPeriod: 3000, keepalive: 30
+      });
+      me.clients.push(c);
+      c.on("connect", function () {
+        c.subscribe(me.topicIn, { qos: 1 }, function (err) {
+          if (err || me !== net) return;
+          relayInfo();
+          if (!me.ready) { me.ready = true; onRelayReady(me); }
+          else if (me.linked) flush(me);
+          else if (!me.isHost) post("hello");
+        });
+      });
+      c.on("close", relayInfo);
+      c.on("message", function (topic, payload) { if (me === net) incoming(me, payload); });
+      c.on("error", function () {});
+    });
+  }
+
+  // Re-send everything not yet confirmed, right now.
+  function flush(me) {
+    Object.keys(me.outbox).forEach(function (s) { me.outbox[s].t = 0; });
+    tick(me);
+  }
+
+  function relayInfo() {
+    var n = net.clients.filter(function (c) { return c.connected; }).length;
+    $("relayInfo").textContent = net.key ? "Relay servers connected: " + n + " of " + BROKERS.length : "";
+  }
+
+  function inviteLink() { return location.origin + location.pathname + "?room=" + net.code; }
+
+  function openRoom(isHost, code) {
+    teardown();
+    var me = net;
+    me.isHost = isHost;
+    me.code = code;
+    $("createBtn").disabled = true;
+    $("joinBtn").disabled = true;
+    if (typeof mqtt === "undefined" || !window.crypto || !crypto.subtle) {
+      resetLobby("Could not load the connection library. Check your internet and reload the page.");
+      return;
+    }
+    lobbyMsg(isHost ? "Setting up the room…" : "Joining room " + code + "…");
+    $("joinCancel").classList.toggle("hidden", isHost);
+    deriveRoom(code).then(function (room) {
+      if (me !== net) return;
+      me.key = room.key;
+      me.topicIn = room.topic + (isHost ? "/g" : "/h");
+      me.topicOut = room.topic + (isHost ? "/h" : "/g");
+      connectBrokers(me);
+      setTimeout(function () {
+        if (me === net && !me.ready) resetLobby("Could not reach the game relay. Check your internet and try again.");
+      }, 15000);
+    }).catch(function () {
+      if (me === net) resetLobby("Could not set up the room in this browser. Try a different browser.");
+    });
+  }
+
+  function onRelayReady(me) {
+    me.timer = setInterval(function () { tick(me); }, 4000);
+    if (me.isHost) { lobbyMsg(""); showWaiting(me.code); return; }
+    var tries = 0;
+    post("hello");
+    me.helloTimer = setInterval(function () {
+      if (me !== net || me.linked) { clearInterval(me.helloTimer); return; }
+      tries++;
+      if (tries === 6) lobbyMsg("Still looking for room " + me.code + "… Ask the other player to open their game page and keep it on screen.");
+      if (tries > 120) {
+        clearInterval(me.helloTimer);
+        resetLobby("No room found with code " + me.code + ". Check the code and try again.");
+        return;
+      }
+      post("hello");
+    }, 1500);
+  }
+
+  function createRoom() { lobbyMsg(""); openRoom(true, makeCode()); }
+
+  function joinRoom() {
+    var code = $("codeInput").value.trim().toUpperCase();
+    if (code.length !== CODE_LEN) { lobbyMsg("Enter the " + CODE_LEN + "-letter room code."); return; }
+    openRoom(false, code);
+  }
+
+  // ---------- game state ----------
+  // The room creator ("host") holds the state. Both players send actions; the host applies
+  // them and sends the result to the guest, so both screens always agree.
+  var S = null;
+
+  function freshState() {
+    return {
+      phase: "setup",                // setup | round | reveal | done
+      total: 5, round: 0, order: [],
+      words: { host: null, guest: null },
+      match: null,
+      history: []                    // true / false per finished round
+    };
+  }
+
+  function newGame() {
+    S = null;
+    if (net.isHost) { S = freshState(); sync(); }
+    else render();
+  }
+
+  function norm(w) {
+    w = String(w).toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (w.length > 3 && w.charAt(w.length - 1) === "s") w = w.slice(0, -1);   // "apples" matches "apple"
+    return w;
+  }
+
+  function apply(a, who) {
+    if (!S || !a || typeof a.k !== "string") return;
+    switch (a.k) {
+      case "length":
+        if (S.phase === "setup" && LENGTHS.indexOf(a.v) >= 0) S.total = a.v;
+        break;
+      case "start":
+        if (S.phase === "setup" || S.phase === "done") {
+          var t = S.total; S = freshState(); S.total = t;
+          var idx = PROMPTS.map(function (p, i) { return i; });
+          for (var i = idx.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = idx[i]; idx[i] = idx[j]; idx[j] = x; }
+          S.order = idx.slice(0, S.total);
+          S.round = 1;
+          S.phase = "round";
+        }
+        break;
+      case "word":
+        if (S.phase === "round" && S.words[who] === null && typeof a.v === "string" && a.v.trim()) {
+          S.words[who] = a.v.trim().slice(0, 24);
+          if (S.words.host !== null && S.words.guest !== null) {
+            S.match = norm(S.words.host) === norm(S.words.guest) && norm(S.words.host) !== "";
+            S.phase = "reveal";
+          }
+        }
+        break;
+      case "count":      // either player can accept a near miss, like "soccer" and "football"
+        if (S.phase === "reveal" && S.match === false) S.match = true;
+        break;
+      case "next":
+        if (S.phase !== "reveal") break;
+        S.history.push(!!S.match);
+        if (S.round >= S.total) S.phase = "done";
+        else { S.round++; S.words = { host: null, guest: null }; S.match = null; S.phase = "round"; }
+        break;
+    }
+    sync();
+  }
+
+  // The guest must not see the host's word before locking in their own.
+  function guestView() {
+    var v = JSON.parse(JSON.stringify(S));
+    if (v.phase === "round" && v.words.host !== null) v.words.host = true;
+    return v;
+  }
+
+  function sync() { send({ t: "state", s: guestView() }); render(); }
+
+  function act(a) {
+    if (net.isHost) apply(a, "host");
+    else send({ t: "act", a: a });
+  }
+
+  function handle(m) {
+    if (!m || typeof m.t !== "string") return;
+    if (m.t === "chat") { if (typeof m.text === "string") chatLine("Them: " + m.text.slice(0, 200), ""); return; }
+    if (net.isHost) { if (m.t === "act") apply(m.a, "guest"); }
+    else if (m.t === "state" && m.s) { S = m.s; render(); }
+  }
+
+  // ---------- rendering ----------
+  var lastRound = "";
+
+  function show(id, on) { $(id).classList.toggle("hidden", !on); }
+
+  function drawDots(el, history, total) {
+    el.textContent = "";
+    for (var i = 0; i < total; i++) {
+      var d = document.createElement("span");
+      if (i < history.length) d.className = history[i] ? "yes" : "no";
+      el.appendChild(d);
+    }
+  }
+
+  function render() {
+    show("loadingBox", !S);
+    show("setupBox", !!S && S.phase === "setup");
+    show("playBox", !!S && (S.phase === "round" || S.phase === "reveal"));
+    show("doneBox", !!S && S.phase === "done");
+    if (!S) return;
+    var me = net.isHost ? "host" : "guest", them = net.isHost ? "guest" : "host";
+    var hits = S.history.filter(Boolean).length;
+
+    if (S.phase === "setup") {
+      Array.prototype.forEach.call($("lengthChips").children, function (b) {
+        b.classList.toggle("on", Number(b.dataset.len) === S.total);
+      });
+      return;
+    }
+
+    if (S.phase === "done") {
+      var share = hits / S.total;
+      $("doneLine").textContent = "You matched " + hits + " of " + S.total;
+      $("doneNote").textContent = share === 1 ? "One brain, two bodies. Perfect score!"
+        : share >= 0.7 ? "Scarily in sync."
+        : share >= 0.4 ? "Not bad. You are getting each other."
+        : "Two very different brains. Try again?";
+      drawDots($("doneDots"), S.history, S.total);
+      return;
+    }
+
+    var key = S.round + "|" + S.order[S.round - 1];
+    if (key !== lastRound) { lastRound = key; $("wordInput").value = ""; }
+    $("progress").textContent = "Round " + S.round + " of " + S.total;
+    $("score").textContent = "Matches: " + (hits + (S.phase === "reveal" && S.match ? 1 : 0));
+    $("prompt").textContent = PROMPTS[S.order[S.round - 1]];
+    drawDots($("dots"), S.history, S.total);
+
+    var mine = S.words[me] !== null, theirs = S.words[them] !== null;
+    show("wordForm", S.phase === "round" && !mine);
+    show("revealBox", S.phase === "reveal");
+    if (S.phase === "round") {
+      $("hint").textContent = mine ? "Locked in. Waiting for them…"
+        : theirs ? "They have locked in. Your turn!" : "Type the first word you think they will also type.";
+    } else {
+      $("hint").textContent = "";
+      $("myWord").textContent = S.words[me];
+      $("theirWord").textContent = S.words[them];
+      $("verdict").textContent = S.match ? "🎉 Same brain!" : "Not the same…";
+      $("verdict").className = "verdict " + (S.match ? "yes" : "no");
+      show("countBtn", !S.match);
+      $("nextBtn").textContent = S.round >= S.total ? "See result" : "Next";
+    }
+  }
+
+  // ---------- chat ----------
+  function chatLine(text, cls) {
+    var d = document.createElement("div");
+    d.textContent = text;
+    if (cls) d.className = cls;
+    var log = $("chatLog");
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+  function sysLine(text) { chatLine(text, "sys"); }
+  function sendChat(text) {
+    text = String(text).trim().slice(0, 200);
+    if (!text) return;
+    send({ t: "chat", text: text });
+    chatLine("You: " + text, "me");
+  }
+
+  // ---------- wiring ----------
+  LENGTHS.forEach(function (n) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.len = n; b.textContent = n + " rounds";
+    b.addEventListener("click", function () { act({ k: "length", v: n }); });
+    $("lengthChips").appendChild(b);
+  });
+  function lockIn() {
+    var v = $("wordInput").value.trim();
+    if (v) act({ k: "word", v: v });
+  }
+  $("startBtn").addEventListener("click", function () { act({ k: "start" }); });
+  $("againBtn").addEventListener("click", function () { act({ k: "start" }); });
+  $("wordBtn").addEventListener("click", lockIn);
+  $("wordInput").addEventListener("keydown", function (e) { if (e.key === "Enter") lockIn(); });
+  $("countBtn").addEventListener("click", function () { act({ k: "count" }); });
+  $("nextBtn").addEventListener("click", function () { act({ k: "next" }); });
+
+  $("createBtn").addEventListener("click", createRoom);
+  $("joinBtn").addEventListener("click", joinRoom);
+  $("cancelBtn").addEventListener("click", function () { resetLobby(""); });
+  $("leaveBtn").addEventListener("click", function () { resetLobby(""); });
+  $("joinCancel").addEventListener("click", function () { resetLobby(""); });
+  $("codeInput").addEventListener("keydown", function (e) { if (e.key === "Enter") joinRoom(); });
+  $("codeInput").addEventListener("input", function () {
+    this.value = this.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, CODE_LEN);
+  });
+  $("inviteBtn").addEventListener("click", function () {
+    var url = inviteLink();
+    var done = function () { $("inviteBtn").textContent = "Link copied!"; $("inviteNote").textContent = "Paste it in a message to the other player."; };
+    var fallback = function () { $("inviteNote").textContent = url; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+    else fallback();
+  });
+
+  // Phones pause a page when you switch apps. Reconnect when it comes back.
+  var hiddenAt = 0;
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (net.key && hiddenAt && Date.now() - hiddenAt > 4000) connectBrokers(net);
+  });
+
+  $("chatSend").addEventListener("click", function () { sendChat($("chatInput").value); $("chatInput").value = ""; });
+  $("chatInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { sendChat($("chatInput").value); $("chatInput").value = ""; }
+  });
+  EMOJIS.forEach(function (em) {
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = em;
+    b.setAttribute("aria-label", "Send " + em);
+    b.addEventListener("click", function () { sendChat(em); });
+    $("emojiRow").appendChild(b);
+  });
+
+  var invited = new URLSearchParams(location.search).get("room");
+  if (invited && new RegExp("^[A-Za-z]{" + CODE_LEN + "}$").test(invited)) {
+    $("codeInput").value = invited.toUpperCase();
+    joinRoom();
+  }
+
+  // test hook: lets an automated check read the state
+  window.__sameBrain = { state: function () { return S; }, net: function () { return net; } };
+})();
+</script>
+</body>
+</html>
