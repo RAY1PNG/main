@@ -1,48 +1,31 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-	<link rel="stylesheet" type="text/css" href="../../css/game.css">
-	<link rel="stylesheet" type="text/css" href="../../css/navbar.css">
-	<link rel="stylesheet" type="text/css" href="../../css/footer.css">
-	<link rel="stylesheet" type="text/css" href="../../css/global.css">
-
-
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>GAMEZ</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My first game · Raymond</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/site.css">
 </head>
-
 <body>
+  <main>
+    <header class="page-head">
+      <p class="eyebrow"><a href="../">← Games</a></p>
+      <h1>My first game</h1>
+      <p class="lead">
+        I didn't have much coding experience, so I started with Scratch, which uses block coding, to learn the basics
+        before exploring other languages. It's inspired by Flappy Bird and a scenario I came up with in secondary school
+        with a classmate. Hope you enjoy it.
+      </p>
+    </header>
 
-	<div id="header"></div>
-
-	<h3>welcome to the game page.</h3>
-
-	<p>Here is the first game that i have created. I don't have much experience with coding. Hence, i decided to use
-		scratch which has block coding to help me with the basics of coding before i explore more options with
-		coding.<br>below is a embedded link of the game that i had created took inspiration from flappy birds and a
-		scenario that i had created in my secondary school with a classmate.<br>Hope you guys enjoy this. <br> ps:
-	<pre> dont even attempt to get more than 10 it is not possible. </pre>
-	</p>
-
-	<div class="game1">
-		<iframe src="https://scratch.mit.edu/projects/854583692/embed" allowtransparency="true" width="485" height="402"
-			frameborder="0" scrolling="no" allowfullscreen></iframe>
-	</div>
-
-	<div id="footer"></div>
-
-	<script>
-		fetch('/main/components/header.html')
-			.then(Response => Response.text())
-			.then(data => document.getElementById('header').innerHTML = data);
-
-		fetch('/main/components/footer.html')
-			.then(Response => Response.text())
-			.then(data => document.getElementById('footer').innerHTML = data);
-	</script>
-
+    <div class="embed">
+      <iframe src="https://scratch.mit.edu/projects/854583692/embed" title="Scratch game" allowtransparency="true" scrolling="no" allowfullscreen></iframe>
+    </div>
+    <p class="muted" style="margin-top:14px">P.S. Don't even attempt to get more than 10. It is not possible.</p>
+  </main>
+  <script src="../../js/site.js"></script>
 </body>
-
 </html>

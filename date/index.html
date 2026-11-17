@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A ticket for you · Raymond</title>
+  <meta name="description" content="One ticket, admits two.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/site.css">
+  <style>
+    :root { --tk: #fff7ea; --tk-ink: #2a1d14; --tk-muted: #8a7563; --tk-line: #e8d9c3; --gold: #c8902e; --red: #d9482b; }
+    [hidden] { display: none !important; }
+    body { overflow-x: clip; }
+    .stage { max-width: 720px; margin: 0 auto; padding: 40px 0 24px; }
+    .intro { text-align: center; margin-bottom: 28px; }
+    .intro .lead { margin: 0 auto; }
+
+    /* ---- the ticket ---- */
+    .ticket {
+      --notch: 16px;
+      position: relative; display: grid; grid-template-columns: 1fr 190px;
+      color: var(--tk-ink); filter: drop-shadow(0 18px 30px rgba(60, 30, 10, .22));
+    }
+    .t-main, .t-stub {
+      background: var(--tk);
+      background-image: radial-gradient(circle at 1px 1px, rgba(140, 100, 60, .09) 1px, transparent 0);
+      background-size: 14px 14px;
+    }
+    .t-main {
+      border-radius: 18px 0 0 18px; padding: 28px 28px 26px;
+      -webkit-mask: radial-gradient(circle at right top, transparent var(--notch), #000 calc(var(--notch) + .5px)) top / 100% 51% no-repeat,
+                    radial-gradient(circle at right bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) bottom / 100% 51% no-repeat;
+              mask: radial-gradient(circle at right top, transparent var(--notch), #000 calc(var(--notch) + .5px)) top / 100% 51% no-repeat,
+                    radial-gradient(circle at right bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) bottom / 100% 51% no-repeat;
+    }
+    .t-stub {
+      border-radius: 0 18px 18px 0; padding: 24px 18px;
+      border-left: 2px dashed var(--tk-line);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
+      -webkit-mask: radial-gradient(circle at left top, transparent var(--notch), #000 calc(var(--notch) + .5px)) top / 100% 51% no-repeat,
+                    radial-gradient(circle at left bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) bottom / 100% 51% no-repeat;
+              mask: radial-gradient(circle at left top, transparent var(--notch), #000 calc(var(--notch) + .5px)) top / 100% 51% no-repeat,
+                    radial-gradient(circle at left bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) bottom / 100% 51% no-repeat;
+      transform-origin: 0 100%;
+    }
+    .t-kicker { display: flex; justify-content: space-between; gap: 10px; font: 700 .72rem/1 var(--font-body); letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
+    .t-title { font: 800 clamp(1.9rem, 4vw + 1rem, 2.8rem)/1.05 var(--font-head); margin: 18px 0 10px; letter-spacing: -.02em; }
+    .t-sub { color: var(--tk-muted); margin: 0 0 22px; }
+    .t-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; border-top: 1px solid var(--tk-line); padding-top: 16px; }
+    .t-rows .k { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--tk-muted); font-weight: 700; }
+    .t-rows .v { font: 700 1.02rem/1.25 var(--font-head); margin-top: 4px; }
+    .t-rows .v.blank { color: var(--tk-line); }
+    .barcode { width: 100%; height: 44px; background: repeating-linear-gradient(90deg, var(--tk-ink) 0 2px, transparent 2px 4px, var(--tk-ink) 4px 5px, transparent 5px 8px, var(--tk-ink) 8px 11px, transparent 11px 12px); opacity: .8; border-radius: 2px; }
+    .admit { font: 800 1.5rem/1 var(--font-head); letter-spacing: .04em; }
+    .admit small { display: block; font: 700 .68rem/1.4 var(--font-body); letter-spacing: .16em; color: var(--tk-muted); text-transform: uppercase; }
+
+    /* hold-to-tear button */
+    .hold {
+      position: relative; overflow: hidden; width: 100%;
+      font: 700 .95rem/1.2 var(--font-body); color: #fff; background: var(--red);
+      border: 0; border-radius: 12px; padding: 14px 10px; cursor: pointer; touch-action: none;
+      -webkit-user-select: none; user-select: none;
+    }
+    .hold::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .22); transform: scaleX(var(--p, 0)); transform-origin: left; }
+    .hold span { position: relative; }
+    .hold-hint { font-size: .78rem; color: var(--tk-muted); margin: 0; }
+
+    .ticket.torn .t-stub { animation: tear .8s cubic-bezier(.5, 0, .7, .4) forwards; }
+    @keyframes tear {
+      0% { transform: none; }
+      25% { transform: rotate(4deg) translateX(6px); }
+      100% { transform: rotate(28deg) translate(60px, 420px); opacity: 0; }
+    }
+
+    .decline { display: block; margin: 18px auto 0; background: none; border: 0; color: var(--muted); font: inherit; font-size: .95rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+    /* ---- form ---- */
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; margin-top: 22px; animation: rise .4s ease; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .q { margin: 0 0 22px; }
+    .q:last-of-type { margin-bottom: 8px; }
+    .q > h3 { margin: 0 0 10px; display: flex; align-items: baseline; gap: 10px; }
+    .q > h3 .n { font: 700 .8rem/1 var(--font-body); color: var(--accent); }
+    .days { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x mandatory; }
+    .day {
+      flex: 0 0 64px; scroll-snap-align: start; text-align: center; padding: 10px 0;
+      background: var(--surface-2); border: 2px solid transparent; border-radius: 14px; color: var(--ink);
+      font: inherit; cursor: pointer;
+    }
+    .day .dw { font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+    .day .dd { font: 800 1.4rem/1.1 var(--font-head); }
+    .day .dm { font-size: .75rem; color: var(--muted); }
+    .day.wk .dw { color: var(--accent); }
+    .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+    .opts.three { grid-template-columns: repeat(3, 1fr); }
+    .opt {
+      display: flex; align-items: center; gap: 10px; text-align: left;
+      background: var(--surface-2); border: 2px solid transparent; border-radius: 14px;
+      padding: 12px 14px; font: 600 .97rem/1.2 var(--font-body); color: var(--ink); cursor: pointer;
+      transition: transform .12s ease;
+    }
+    .opt .e { font-size: 1.35rem; }
+    .opt:hover, .day:hover { transform: translateY(-1px); }
+    .opt[aria-pressed="true"], .day[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+    .opt.spin { border-style: dashed; border-color: var(--line); }
+    .opt.flash { border-color: var(--accent); }
+    textarea {
+      width: 100%; min-height: 84px; resize: vertical; font: inherit; color: var(--ink);
+      background: var(--surface-2); border: 2px solid transparent; border-radius: 14px; padding: 12px 14px;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    .row-end { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    .btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
+
+    /* ---- stamped ---- */
+    .stamp {
+      position: absolute; right: 24px; top: 34px; z-index: 2;
+      font: 800 1.35rem/1 var(--font-head); letter-spacing: .12em; color: var(--red);
+      border: 4px double var(--red); border-radius: 10px; padding: 10px 14px;
+      transform: rotate(-12deg); opacity: .88; mix-blend-mode: multiply;
+      animation: stamp .45s cubic-bezier(.2, 1.6, .4, 1) both .15s; pointer-events: none;
+    }
+    @keyframes stamp { from { transform: rotate(-12deg) scale(1.8); opacity: 0; } to { transform: rotate(-12deg) scale(1); opacity: .88; } }
+    .ticket.done { grid-template-columns: 1fr; }
+    .ticket.done .t-main { border-radius: 18px; -webkit-mask: none; mask: none; }
+    .note-line { margin: 16px 0 0; padding-top: 12px; border-top: 1px dashed var(--tk-line); color: var(--tk-muted); font-style: italic; overflow-wrap: anywhere; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 24px; }
+    .toast { text-align: center; color: var(--muted); min-height: 1.6em; margin: 12px 0 0; }
+
+    @media (max-width: 600px) {
+      .stage { padding-top: 24px; }
+      .ticket { grid-template-columns: 1fr; }
+      .t-main { border-radius: 18px 18px 0 0; padding: 22px 20px;
+        -webkit-mask: radial-gradient(circle at left bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+                      radial-gradient(circle at right bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+                mask: radial-gradient(circle at left bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+                      radial-gradient(circle at right bottom, transparent var(--notch), #000 calc(var(--notch) + .5px)) right / 51% 100% no-repeat; }
+      .t-stub { border-radius: 0 0 18px 18px; border-left: 0; border-top: 2px dashed var(--tk-line); flex-direction: row; flex-wrap: wrap; padding: 18px 20px;
+        -webkit-mask: radial-gradient(circle at left top, transparent var(--notch), #000 calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+                      radial-gradient(circle at right top, transparent var(--notch), #000 calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+                mask: radial-gradient(circle at left top, transparent var(--notch), #000 calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+                      radial-gradient(circle at right top, transparent var(--notch), #000 calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+        transform-origin: 0 0; }
+      .t-stub .barcode { display: none; }
+      .t-stub .admit { flex: 1; text-align: left; }
+      .t-stub .hold { flex: 1 1 100%; }
+      .t-rows { grid-template-columns: 1fr 1fr; }
+      .t-rows > div:last-child { grid-column: 1 / -1; }
+      .opts.three { grid-template-columns: 1fr; }
+      .stamp { right: 16px; top: auto; bottom: 20px; font-size: 1.05rem; }
+      .ticket.torn .t-stub { animation-name: tear-down; }
+      @keyframes tear-down { 0% { transform: none; } 25% { transform: rotate(-3deg) translateY(4px); } 100% { transform: rotate(-14deg) translateY(380px); opacity: 0; } }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="stage">
+      <div class="intro">
+        <p class="eyebrow" id="hello">A ticket for you</p>
+      </div>
+
+      <!-- the ticket (updates live as the form is filled) -->
+      <div class="ticket" id="ticket">
+        <div class="t-main">
+          <div class="t-kicker"><span>Admit two</span><span id="tNo">No. 0001</span></div>
+          <h1 class="t-title" id="tTitle">Will you go on a date with me?</h1>
+          <p class="t-sub" id="tSub">No pressure. Hold the red button to tear the ticket and say yes.</p>
+          <div class="t-rows">
+            <div><div class="k">Date</div><div class="v blank" id="vDay">—</div></div>
+            <div><div class="k">Time</div><div class="v blank" id="vTime">—</div></div>
+            <div><div class="k">Plan</div><div class="v blank" id="vPlan">—</div></div>
+          </div>
+          <p class="note-line" id="vNote" hidden></p>
+        </div>
+        <div class="t-stub" id="stub">
+          <div class="admit">Yes<small>Seat: next to me</small></div>
+          <div class="barcode" aria-hidden="true"></div>
+          <button class="hold" id="hold" type="button"><span id="holdText">Hold to tear</span></button>
+          <p class="hold-hint">press and hold</p>
+        </div>
+      </div>
+      <button class="decline" id="decline" type="button">Not this time</button>
+
+      <!-- step 2: fill in the ticket -->
+      <form class="panel" id="form" hidden>
+        <div class="q">
+          <h3><span class="n">01</span>Which day works?</h3>
+          <div class="days" id="days"></div>
+        </div>
+        <div class="q">
+          <h3><span class="n">02</span>What time?</h3>
+          <div class="opts three" id="times"></div>
+        </div>
+        <div class="q">
+          <h3><span class="n">03</span>What should we do?</h3>
+          <div class="opts" id="plans"></div>
+        </div>
+        <div class="q">
+          <h3><span class="n">04</span>Anything I should know? <span class="muted" style="font:400 .9rem var(--font-body)">optional</span></h3>
+          <textarea id="note" maxlength="200" placeholder="Food you don't eat, a place you've been wanting to try…"></textarea>
+        </div>
+        <div class="row-end">
+          <span class="muted" id="left">Pick a day, time and plan</span>
+          <button class="btn primary" id="print" type="submit" disabled>Print my ticket →</button>
+        </div>
+      </form>
+
+      <!-- step 3: send it -->
+      <div id="sendBox" hidden>
+        <div class="actions">
+          <button class="btn primary" id="send" type="button"><span>Send it to <span class="fromName"></span></span></button>
+          <button class="btn" id="edit" type="button">Change something</button>
+        </div>
+        <p class="toast" id="toast" role="status"></p>
+      </div>
+
+      <!-- declined -->
+      <div class="panel" id="noBox" hidden style="text-align:center">
+        <h2 style="margin-bottom:6px">All good 🙂</h2>
+        <p class="muted">Thanks for being honest. You can let <span class="fromName"></span> know, or just close this page.</p>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn" id="sendNo" type="button"><span>Let <span class="fromName"></span> know</span></button>
+          <button class="btn" id="undoNo" type="button">Actually, wait…</button>
+        </div>
+        <p class="toast" id="toastNo" role="status"></p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+  // ---- settings: change these ----
+  // Add ?to=Name to the link you send, e.g. .../main/date/?to=Alex, and the ticket greets them by name.
+  var CFG = {
+    from: "Raymond",
+    days: 14,
+    times: [["☀️", "Morning"], ["🌤️", "Afternoon"], ["🌙", "Evening"]],
+    plans: [["🍜", "Food hunt"], ["🎬", "Movie"], ["☕", "Café"], ["🕹️", "Arcade"], ["🧺", "Picnic"], ["🖼️", "Museum"], ["🌃", "Night walk"], ["🎳", "Bowling"]]
+  };
+  // ---------------------------------
+
+  (function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var to = (new URLSearchParams(location.search).get("to") || "").trim().slice(0, 30);
+    var pick = { day: null, time: null, plan: null };
+    var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    document.querySelectorAll(".fromName").forEach(function (el) { el.textContent = CFG.from; });
+    $("hello").textContent = to ? "A ticket for " + to : "A ticket for you";
+    $("tNo").textContent = "No. " + String(Math.floor(1000 + Math.random() * 9000));
+
+    // ---- hold to tear ----
+    var holdMs = 900, t0 = 0, raf = 0;
+    function frame(now) {
+      var p = Math.min(1, (now - t0) / holdMs);
+      $("hold").style.setProperty("--p", p);
+      if (p >= 1) { accept(); return; }
+      raf = requestAnimationFrame(frame);
+    }
+    function startHold(e) {
+      if (e.button && e.button !== 0) return;
+      e.preventDefault();
+      t0 = performance.now(); $("holdText").textContent = "Keep holding…";
+      raf = requestAnimationFrame(frame);
+    }
+    function stopHold() {
+      if (!raf) return;
+      cancelAnimationFrame(raf); raf = 0;
+      $("hold").style.setProperty("--p", 0); $("holdText").textContent = "Hold to tear";
+    }
+    $("hold").addEventListener("pointerdown", startHold);
+    ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { $("hold").addEventListener(ev, stopHold); });
+    // keyboard: holding Space/Enter works too
+    $("hold").addEventListener("keydown", function (e) { if ((e.key === " " || e.key === "Enter") && !raf && !e.repeat) startHold(e); });
+    $("hold").addEventListener("keyup", stopHold);
+
+    function accept() {
+      raf = 0;
+      if (navigator.vibrate) navigator.vibrate(30);
+      $("ticket").classList.add("torn");
+      $("decline").hidden = true;
+      setTimeout(function () {
+        $("stub").hidden = true;
+        $("ticket").classList.add("done");
+        $("tTitle").textContent = to ? "Yay, " + to + "! Let's plan it." : "Yay! Let's plan it.";
+        $("tSub").textContent = "Fill in the details below and your ticket fills in with them.";
+        $("form").hidden = false;
+        $("form").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      }, reduce ? 0 : 750);
+    }
+
+    // ---- build the choices ----
+    var wk = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    var mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var today = new Date();
+    for (var i = 1; i <= CFG.days; i++) {
+      var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+      var label = wk[d.getDay()] + " " + d.getDate() + " " + mo[d.getMonth()];
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "day" + (d.getDay() === 0 || d.getDay() === 6 ? " wk" : "");
+      b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", label);
+      b.dataset.v = label;
+      b.innerHTML = '<div class="dw">' + wk[d.getDay()] + '</div><div class="dd">' + d.getDate() + '</div><div class="dm">' + mo[d.getMonth()] + "</div>";
+      $("days").appendChild(b);
+    }
+    function optButtons(box, list) {
+      list.forEach(function (o) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "opt"; b.setAttribute("aria-pressed", "false");
+        b.dataset.v = o[1];
+        b.innerHTML = '<span class="e" aria-hidden="true">' + o[0] + "</span>" + o[1];
+        box.appendChild(b);
+      });
+    }
+    optButtons($("times"), CFG.times);
+    optButtons($("plans"), CFG.plans);
+    var spin = document.createElement("button");
+    spin.type = "button"; spin.className = "opt spin";
+    spin.innerHTML = '<span class="e" aria-hidden="true">🎲</span>Surprise me';
+    $("plans").appendChild(spin);
+
+    function choose(box, key, btn) {
+      box.querySelectorAll("[aria-pressed]").forEach(function (x) { x.setAttribute("aria-pressed", x === btn ? "true" : "false"); });
+      pick[key] = btn.dataset.v;
+      render();
+    }
+    [["days", "day"], ["times", "time"], ["plans", "plan"]].forEach(function (pair) {
+      var box = $(pair[0]);
+      box.addEventListener("click", function (e) {
+        var btn = e.target.closest("button");
+        if (!btn || btn === spin) return;
+        choose(box, pair[1], btn);
+      });
+    });
+
+    // "Surprise me" shuffles through the plans and lands on one
+    spin.addEventListener("click", function () {
+      var opts = Array.prototype.slice.call($("plans").querySelectorAll(".opt:not(.spin)"));
+      var target = Math.floor(Math.random() * opts.length);
+      var steps = reduce ? 0 : opts.length * 2 + target, n = 0;
+      spin.disabled = true;
+      (function tick() {
+        opts.forEach(function (o) { o.classList.remove("flash"); });
+        if (n >= steps) { choose($("plans"), "plan", opts[target]); spin.disabled = false; return; }
+        opts[n % opts.length].classList.add("flash");
+        n++;
+        setTimeout(tick, 30 + n * 3);
+      })();
+    });
+
+    $("note").addEventListener("input", render);
+
+    function setV(id, v) { var el = $(id); el.textContent = v || "—"; el.classList.toggle("blank", !v); }
+    function render() {
+      setV("vDay", pick.day); setV("vTime", pick.time); setV("vPlan", pick.plan);
+      var note = $("note").value.trim();
+      $("vNote").hidden = !note; $("vNote").textContent = note ? "“" + note + "”" : "";
+      var missing = ["day", "time", "plan"].filter(function (k) { return !pick[k]; });
+      $("print").disabled = missing.length > 0;
+      $("left").textContent = missing.length ? "Still to pick: " + missing.join(", ") : "Looks perfect.";
+    }
+
+    // ---- print + send ----
+    $("form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      if ($("print").disabled) return;
+      $("form").hidden = true;
+      $("tTitle").textContent = "It's a date.";
+      $("tSub").textContent = (to ? to + " & " : "You & ") + CFG.from + ". Don't lose this ticket.";
+      var s = document.createElement("div"); s.className = "stamp"; s.textContent = "CONFIRMED";
+      $("ticket").appendChild(s);
+      $("sendBox").hidden = false;
+      $("ticket").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    });
+
+    $("edit").addEventListener("click", function () {
+      var s = $("ticket").querySelector(".stamp"); if (s) s.remove();
+      $("sendBox").hidden = true; $("toast").textContent = "";
+      $("tTitle").textContent = "Let's plan it.";
+      $("tSub").textContent = "Change anything you like.";
+      $("form").hidden = false;
+    });
+
+    function share(text, toastEl) {
+      if (navigator.share) {
+        navigator.share({ text: text }).then(function () {
+          toastEl.textContent = "Sent! 💌";
+        }).catch(function (err) {
+          if (err && err.name === "AbortError") return;
+          copy(text, toastEl);
+        });
+      } else copy(text, toastEl);
+    }
+    function copy(text, toastEl) {
+      var done = function () { toastEl.textContent = "Copied! Paste it in a message to " + CFG.from + "."; };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { fallback(text); done(); });
+      } else { fallback(text); done(); }
+    }
+    function fallback(text) {
+      var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} ta.remove();
+    }
+
+    $("send").addEventListener("click", function () {
+      var note = $("note").value.trim();
+      var text = "🎟️ It's a date!\n" +
+        "📅 " + pick.day + "\n" +
+        "🕒 " + pick.time + "\n" +
+        "✨ " + pick.plan +
+        (note ? "\n📝 " + note : "") +
+        (to ? "\n— " + to : "");
+      share(text, $("toast"));
+    });
+
+    // ---- not this time ----
+    $("decline").addEventListener("click", function () {
+      $("ticket").hidden = true; $("decline").hidden = true; $("noBox").hidden = false;
+    });
+    $("undoNo").addEventListener("click", function () {
+      $("ticket").hidden = false; $("decline").hidden = false; $("noBox").hidden = true; $("toastNo").textContent = "";
+    });
+    $("sendNo").addEventListener("click", function () {
+      share("Thanks for the ticket, but not this time 🙂" + (to ? "\n— " + to : ""), $("toastNo"));
+    });
+  })();
+  </script>
+  <script src="../js/site.js"></script>
+</body>
+</html>
