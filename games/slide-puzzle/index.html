@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide Puzzle</title>
+<style>
+  :root {
+    --bg: #101a24; --panel: #18263a; --line: #2b405c; --text: #edf4fb; --muted: #9db2c8;
+    --accent: #6ee7b7; --accent-ink: #053322;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+  main { max-width: 460px; margin: 0 auto; padding: 16px 16px 40px; }
+  h1 { font-size: 1.5rem; margin: 0; }
+  button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; touch-action: manipulation; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+  .chips { display: flex; gap: 6px; }
+  .chip { border-radius: 999px; padding: 4px 12px; font-size: 0.9rem; }
+  .chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .stats { margin-left: auto; text-align: right; color: var(--muted); font-size: 0.9rem; }
+  .stats b { color: var(--text); font-size: 1.2rem; }
+  .board { display: grid; gap: 6px; background: var(--panel); padding: 8px; border-radius: 16px; aspect-ratio: 1; user-select: none; -webkit-user-select: none; }
+  .tile {
+    border: 0; border-radius: 10px; padding: 0; min-width: 0; font-weight: 800; color: #0d1b2a;
+    font-size: clamp(1.1rem, 7vw, 2rem); cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+  }
+  .tile.gap { background: transparent; box-shadow: none; cursor: default; }
+  .tile.home { outline: 2px solid rgba(255,255,255,0.7); outline-offset: -4px; }
+  .msg { text-align: center; min-height: 1.6em; margin: 10px 0 0; font-weight: 700; color: var(--accent); }
+  .hint { color: var(--muted); font-size: 0.9rem; text-align: center; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🧩 Slide Puzzle</h1>
+  <div class="bar">
+    <button class="primary" id="newBtn">Shuffle</button>
+    <div class="chips" id="chips"></div>
+    <div class="stats"><b id="moves">0</b> moves<br><span id="best"></span></div>
+  </div>
+  <div class="board" id="board"></div>
+  <p class="msg" id="msg" role="status"></p>
+  <p class="hint">Tap a tile next to the gap to slide it. Put the numbers back in order, with the gap in the bottom corner. Take your time.</p>
+</main>
+<script>
+(function () {
+  "use strict";
+  var SIZES = [[3, "3×3 easy"], [4, "4×4 classic"]];
+  var n = 3, tiles = [], moves = 0, done = false;
+
+  function $(id) { return document.getElementById(id); }
+  function key() { return "slidepuzzle-best-" + n; }
+  function getBest() { try { return Number(localStorage.getItem(key())) || 0; } catch (e) { return 0; } }
+  function setBest(v) { try { localStorage.setItem(key(), String(v)); } catch (e) {} }
+
+  function solved() { for (var i = 0; i < n * n - 1; i++) if (tiles[i] !== i + 1) return false; return true; }
+
+  function neighbours(g) {
+    var r = Math.floor(g / n), c = g % n, out = [];
+    if (r > 0) out.push(g - n); if (r < n - 1) out.push(g + n);
+    if (c > 0) out.push(g - 1); if (c < n - 1) out.push(g + 1);
+    return out;
+  }
+
+  function shuffle() {
+    tiles = [];
+    for (var i = 1; i < n * n; i++) tiles.push(i);
+    tiles.push(0);
+    var gap = n * n - 1, prev = -1, steps = n === 3 ? 120 : 400;   // random legal slides, so it is always solvable
+    for (var s = 0; s < steps || solved(); s++) {
+      var opts = neighbours(gap).filter(function (x) { return x !== prev; });
+      var pick = opts[Math.floor(Math.random() * opts.length)];
+      tiles[gap] = tiles[pick]; tiles[pick] = 0; prev = gap; gap = pick;
+    }
+    moves = 0; done = false;
+    render();
+  }
+
+  function slide(i) {
+    if (done) return;
+    var gap = tiles.indexOf(0), r = Math.floor(i / n), c = i % n, gr = Math.floor(gap / n), gc = gap % n;
+    if (r !== gr && c !== gc) return;            // same row or column: slide the whole line towards the gap
+    var step = r === gr ? (c < gc ? -1 : 1) : (r < gr ? -n : n);
+    if (i === gap) return;
+    for (var p = gap; p !== i; p += step) { tiles[p] = tiles[p + step]; }
+    tiles[i] = 0;
+    moves++;
+    if (solved()) {
+      done = true;
+      var b = getBest();
+      if (!b || moves < b) setBest(moves);
+    }
+    render();
+  }
+
+  function colour(v) { var hue = Math.round((v - 1) / (n * n - 1) * 300); return "hsl(" + hue + " 80% 72%)"; }
+
+  function render() {
+    var el = $("board");
+    if (el.children.length !== n * n) {
+      el.textContent = "";
+      el.style.gridTemplateColumns = "repeat(" + n + ", 1fr)";
+      for (var i = 0; i < n * n; i++) {
+        var b = document.createElement("button"); b.type = "button"; b.dataset.i = i; el.appendChild(b);
+      }
+    }
+    Array.prototype.forEach.call(el.children, function (b, i) {
+      var v = tiles[i];
+      b.className = "tile" + (v ? "" : " gap") + (v && v === i + 1 ? " home" : "");
+      b.textContent = v || "";
+      b.style.background = v ? colour(v) : "";
+      b.setAttribute("aria-label", v ? "Tile " + v : "Gap");
+    });
+    $("moves").textContent = moves;
+    var best = getBest();
+    $("best").textContent = best ? "best " + best : "";
+    $("msg").textContent = done ? "🎉 Solved in " + moves + " moves!" : "";
+    Array.prototype.forEach.call($("chips").children, function (b) { b.classList.toggle("on", Number(b.dataset.n) === n); });
+  }
+
+  SIZES.forEach(function (s) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.n = s[0]; b.textContent = s[1];
+    b.addEventListener("click", function () { n = s[0]; $("board").textContent = ""; shuffle(); });
+    $("chips").appendChild(b);
+  });
+  $("board").addEventListener("click", function (e) { var t = e.target.closest(".tile"); if (t) slide(Number(t.dataset.i)); });
+  $("newBtn").addEventListener("click", shuffle);
+  window.__slide = { tiles: function () { return tiles; }, slide: slide, solved: solved, n: function () { return n; } };
+  shuffle();
+})();
+</script>
+</body>
+</html>
