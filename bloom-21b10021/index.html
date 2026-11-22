@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+<title>Lilies & Carnations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italiana&family=Jost:wght@400;500&family=Caveat:wght@500;600&display=swap">
+<style>
+  /* Layout: one full-screen night stage; the bouquet turns in the middle, a small name card top-left, controls bottom-center. */
+  :root {
+    --night: #140d19;
+    --dusk: #2a1834;
+    --glow: #4a2a4f;
+    --petal: #f6dbe6;
+    --leaf: #9fbf98;
+    --muted: rgba(246, 219, 230, 0.62);
+    --line: rgba(246, 219, 230, 0.18);
+    --display: "Italiana", "Didot", "Bodoni MT", Georgia, serif;
+    --body: "Jost", "Segoe UI", system-ui, sans-serif;
+    --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+    --paper: #fbf3ee;
+    --paper-ink: #4a2232;
+    --rose: #c23c6c;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(ellipse 70% 60% at 50% 55%, var(--glow) 0%, var(--dusk) 45%, var(--night) 100%), var(--night);
+    color: var(--petal);
+    font-family: var(--body);
+    overflow: hidden;
+  }
+  #stage { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  #stage:active { cursor: grabbing; }
+  .card {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 20px);
+    left: 0; right: 0;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    pointer-events: none;
+    display: grid; gap: 6px;
+  }
+  .card h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+  .card h1 em { font-style: normal; color: var(--leaf); }
+  .card p {
+    margin: 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .controls {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px;
+  }
+  .controls button {
+    font: 500 0.8rem/1 var(--body);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--petal);
+    background: rgba(20, 13, 25, 0.55);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 11px 18px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+  .controls button:hover { border-color: var(--muted); }
+  .controls button:focus-visible { outline: 2px solid var(--leaf); outline-offset: 3px; }
+  .controls span { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; }
+  .controls #openCard { background: var(--rose); border-color: var(--rose); color: var(--paper); }
+  .controls #openCard:hover { filter: brightness(1.08); }
+  .note-wrap {
+    position: fixed; inset: 0; z-index: 5;
+    display: grid; place-items: center;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px;
+    background: rgba(20, 13, 25, 0.45);
+    backdrop-filter: blur(2px);
+  }
+  .note {
+    position: relative;
+    box-sizing: border-box;
+    width: min(400px, 100%);
+    background: var(--paper);
+    color: var(--paper-ink);
+    border-radius: 4px;
+    padding: 30px 28px 22px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    display: grid; gap: 16px;
+    transform-origin: 50% 100%;
+    animation: unfold 0.6s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .note::before {
+    content: ""; position: absolute; inset: 8px;
+    border: 1px solid rgba(194, 60, 108, 0.28); border-radius: 2px; pointer-events: none;
+  }
+  @keyframes unfold { from { opacity: 0; transform: perspective(800px) rotateX(-70deg) translateY(30px); } to { opacity: 1; transform: none; } }
+  .note .to, .note .from { font-family: var(--hand); font-size: 1.5rem; margin: 0; }
+  .note .from { text-align: right; }
+  .note .msg {
+    font-family: var(--hand); font-weight: 500;
+    font-size: clamp(1.6rem, 6vw, 1.95rem); line-height: 1.2;
+    margin: 0; min-height: 6.2em;
+    display: flex; align-items: center;
+    text-wrap: pretty;
+  }
+  .note .msg.swap { animation: swap 0.45s ease both; }
+  @keyframes swap { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .note .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(194, 60, 108, 0.25); }
+  .dots i.on { background: var(--rose); }
+  .note button {
+    font: 500 0.75rem/1 var(--body); letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--paper); background: var(--rose); border: 0; border-radius: 999px;
+    padding: 10px 16px; cursor: pointer;
+  }
+  .note button.plain { background: transparent; color: var(--rose); padding: 10px 6px; }
+  .note button:focus-visible { outline: 2px solid var(--paper-ink); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .note, .note .msg.swap { animation: none; } }
+  [hidden] { display: none !important; }
+  .fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+</style>
+
+<canvas id="stage" aria-label="A bouquet of pink and white lilies and red, pink and white carnations slowly turning"></canvas>
+
+<div class="card">
+  <h1>Lilies <em>&amp;</em> Carnations</h1>
+  <p>Six lilies · Nine carnations</p>
+</div>
+
+<div class="controls">
+  <button id="openCard" type="button">Open your card</button>
+  <button id="toggle" type="button">Pause</button>
+  <span>Drag to turn it yourself</span>
+</div>
+
+<div class="note-wrap" id="noteWrap" hidden>
+  <div class="note" role="dialog" aria-modal="true" aria-label="A card that came with the flowers">
+    <p class="to">To you,</p>
+    <p class="msg" id="msg" aria-live="polite"></p>
+    <p class="from">— someone who likes you</p>
+    <div class="row">
+      <div class="dots" id="dots"></div>
+      <div>
+        <button id="closeCard" class="plain" type="button">Close</button>
+        <button id="nextCard" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const lines = [
+    "I couldn't decide between lilies and carnations, so you get both. You're worth more than one kind of flower.",
+    "Talking to you is easily the best part of my day.",
+    "I catch myself smiling at my phone every time your name shows up.",
+    "Pink carnations are said to mean “I'll never forget you.” That one felt right.",
+    "These will keep spinning as long as this page is open. I'll be thinking about you a lot longer than that.",
+    "I'm really, really glad I met you."
+  ];
+  const wrap = document.getElementById('noteWrap'), msg = document.getElementById('msg');
+  const dots = document.getElementById('dots'), next = document.getElementById('nextCard');
+  const opener = document.getElementById('openCard');
+  lines.forEach(() => dots.appendChild(document.createElement('i')));
+  let i = 0;
+  function show(n) {
+    i = n;
+    msg.textContent = lines[i];
+    msg.classList.remove('swap'); void msg.offsetWidth; msg.classList.add('swap');
+    [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
+    next.textContent = i === lines.length - 1 ? 'Start over' : 'Next';
+  }
+  function open() { wrap.hidden = false; show(0); next.focus(); }
+  function close() { wrap.hidden = true; opener.focus(); }
+  opener.addEventListener('click', open);
+  next.addEventListener('click', () => show((i + 1) % lines.length));
+  document.getElementById('closeCard').addEventListener('click', close);
+  wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !wrap.hidden) close(); });
+})();
+</script>
+
+<div class="fallback" id="fallback" hidden>Your browser couldn't start 3D graphics, so the bouquet can't be shown here.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  if (!window.THREE) { document.getElementById('fallback').hidden = false; return; }
+  const TAU = Math.PI * 2;
+  let seed = 11;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const canvas = document.getElementById('stage');
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  } catch (e) { document.getElementById('fallback').hidden = false; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+
+  scene.add(new THREE.HemisphereLight(0xfff0f4, 0x2a1830, 0.95));
+  const key = new THREE.DirectionalLight(0xfff1df, 1.5); key.position.set(3, 5, 4); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xb9a6ff, 0.8); rim.position.set(-4, 2, -3); scene.add(rim);
+  const fill = new THREE.PointLight(0xffc6da, 0.5, 12); fill.position.set(0, 0.5, 3); scene.add(fill);
+
+  // ---------- textures ----------
+  function canvasTex(w, h, draw) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(c);
+    t.encoding = THREE.sRGBEncoding;
+    t.anisotropy = 4;
+    return t;
+  }
+
+  // Lily varieties: petal colour, centre stripe, green/orange throat, spots, and how far the petals curl back.
+  const LILIES = {
+    pink:     { bg: '#fff4f7', band: '206,30,96', tipFade: true, throat: '206,222,128', throatTo: 0.62, mid: 'rgba(150,12,64,0.55)', vein: 'rgba(160,20,70,0.18)', spots: 90, spotFrom: 0.42, spotSpread: 70, spotR: 4, spot: 'rgba(110,6,46,0.9)', curl: 0 },
+    white:    { bg: '#fffdf6', band: null, throat: '214,226,120', throatTo: 0.45, mid: 'rgba(196,200,110,0.6)', vein: 'rgba(200,190,140,0.25)', spots: 18, spotFrom: 0.42, spotSpread: 40, spotR: 2.5, spot: 'rgba(180,120,90,0.55)', curl: 0 },
+    tiger:    { bg: '#f46a1e', band: '232,84,18', throat: '246,170,60', throatTo: 0.7, mid: 'rgba(160,50,10,0.5)', vein: 'rgba(150,40,0,0.2)', spots: 130, spotFrom: 0.2, spotSpread: 85, spotR: 4.5, spot: 'rgba(36,10,12,0.95)', curl: 0.7 },
+    yellow:   { bg: '#ffe777', band: '255,196,52', throat: '240,140,30', throatTo: 0.55, mid: 'rgba(200,120,20,0.5)', vein: 'rgba(190,120,20,0.2)', spots: 30, spotFrom: 0.45, spotSpread: 45, spotR: 3, spot: 'rgba(150,60,20,0.75)', curl: 0.2 },
+    burgundy: { bg: '#8c1530', band: '120,10,40', throat: '200,70,60', throatTo: 0.6, mid: 'rgba(60,0,15,0.6)', vein: 'rgba(40,0,10,0.25)', spots: 50, spotFrom: 0.4, spotSpread: 55, spotR: 3, spot: 'rgba(30,0,8,0.9)', curl: 0.1 },
+    peach:    { bg: '#ffd9c2', band: '250,150,110', throat: '230,220,140', throatTo: 0.5, mid: 'rgba(210,110,80,0.5)', vein: 'rgba(200,100,70,0.2)', spots: 40, spotFrom: 0.45, spotSpread: 50, spotR: 2.5, spot: 'rgba(170,60,50,0.7)', curl: 0.1 }
+  };
+
+  function lilyTexture(kind) {
+    const c = LILIES[kind];
+    return canvasTex(256, 512, (g, w, h) => {
+      g.fillStyle = c.bg;
+      g.fillRect(0, 0, w, h);
+      if (c.band) {
+        const band = g.createLinearGradient(0, 0, w, 0);
+        band.addColorStop(0.0, `rgba(${c.band},0)`);
+        band.addColorStop(0.2, `rgba(${c.band},0.55)`);
+        band.addColorStop(0.5, `rgba(${c.band},1)`);
+        band.addColorStop(0.8, `rgba(${c.band},0.55)`);
+        band.addColorStop(1.0, `rgba(${c.band},0)`);
+        g.fillStyle = band; g.fillRect(0, 30, w, h);
+        if (c.tipFade) {
+          const tip = g.createLinearGradient(0, 0, 0, 140);
+          tip.addColorStop(0, 'rgba(255,244,247,1)'); tip.addColorStop(1, 'rgba(255,244,247,0)');
+          g.fillStyle = tip; g.fillRect(0, 0, w, 140);
+        }
+      }
+      const throat = g.createLinearGradient(0, h, 0, h * c.throatTo);
+      throat.addColorStop(0, `rgba(${c.throat},1)`);
+      throat.addColorStop(1, `rgba(${c.throat},0)`);
+      g.fillStyle = throat; g.fillRect(w * 0.2, 0, w * 0.6, h);
+      g.strokeStyle = c.mid;
+      g.lineWidth = 4; g.beginPath(); g.moveTo(w / 2, h); g.lineTo(w / 2, 30); g.stroke();
+      g.lineWidth = 1;
+      g.strokeStyle = c.vein;
+      for (let i = -5; i <= 5; i++) {
+        if (!i) continue;
+        g.beginPath(); g.moveTo(w / 2 + i * 3, h);
+        g.quadraticCurveTo(w / 2 + i * 14, h * 0.5, w / 2 + i * 9, 40); g.stroke();
+      }
+      for (let i = 0; i < c.spots; i++) {
+        const f = c.spotFrom + rand() * (0.92 - c.spotFrom);
+        const y = h * f;
+        const spread = c.spotSpread * (1 - (f - c.spotFrom) * 0.8);
+        const x = w / 2 + (rand() + rand() - 1) * spread;
+        const r = 1.5 + rand() * c.spotR;
+        g.fillStyle = c.spot;
+        g.beginPath(); g.ellipse(x, y, r, r * 1.4, 0, 0, TAU); g.fill();
+      }
+    });
+  }
+
+  function carnationTexture(base, deep, edge, stripe) {
+    return canvasTex(256, 256, (g, w, h) => {
+      g.clearRect(0, 0, w, h);
+      g.beginPath();
+      g.moveTo(0, h);
+      g.lineTo(0, 46);
+      for (let x = 0; x <= w; x += 9) {
+        g.lineTo(x + 4.5, 6 + rand() * 12);
+        g.lineTo(Math.min(w, x + 9), 34 + rand() * 18);
+      }
+      g.lineTo(w, h); g.closePath();
+      const grad = g.createLinearGradient(0, h, 0, 0);
+      grad.addColorStop(0, deep); grad.addColorStop(0.45, base); grad.addColorStop(1, base);
+      g.fillStyle = grad; g.fill();
+      if (edge) {
+        g.save(); g.clip();
+        const e = g.createLinearGradient(0, 0, 0, 80);
+        e.addColorStop(0, edge); e.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = e; g.fillRect(0, 0, w, 80);
+        g.restore();
+      }
+      if (stripe) {
+        g.save(); g.clip();
+        g.strokeStyle = stripe; g.lineCap = 'round';
+        for (let i = 0; i < 9; i++) {
+          const x = 20 + rand() * (w - 40);
+          g.lineWidth = 2 + rand() * 5;
+          g.beginPath(); g.moveTo(w / 2 + (x - w / 2) * 0.3, h * (0.55 + rand() * 0.3));
+          g.lineTo(x + (rand() - 0.5) * 20, 10); g.stroke();
+        }
+        g.restore();
+      }
+      g.strokeStyle = 'rgba(60,0,20,0.12)'; g.lineWidth = 1;
+      for (let i = 0; i < 26; i++) {
+        const x = (i + 0.5) * (w / 26);
+        g.beginPath(); g.moveTo(w / 2 + (x - w / 2) * 0.2, h); g.lineTo(x, 40); g.stroke();
+      }
+    });
+  }
+
+  function leafTexture(light, dark) {
+    return canvasTex(64, 256, (g, w, h) => {
+      const grad = g.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, dark); grad.addColorStop(0.5, light); grad.addColorStop(1, dark);
+      g.fillStyle = grad; g.fillRect(0, 0, w, h);
+      g.strokeStyle = 'rgba(230,245,200,0.35)'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(w / 2, h); g.lineTo(w / 2, 0); g.stroke();
+    });
+  }
+
+  // ---------- geometry ----------
+  // A petal grows from the origin along +Y and bends outward toward +Z.
+  function petalGeo(o) {
+    const segU = o.segU || 26, segV = o.segV || 10;
+    const len = o.len, tilt = o.tilt, curl = o.curl, cup = o.cup || 0, pow = o.curlPow || 2;
+    const pos = [], uv = [], idx = [];
+    let y = 0, z = 0;
+    const ds = len / segU;
+    for (let i = 0; i <= segU; i++) {
+      const u = i / segU;
+      const a = tilt + curl * Math.pow(u, pow);
+      const ny = -Math.sin(a), nz = Math.cos(a);
+      const w = o.width(u);
+      for (let j = 0; j <= segV; j++) {
+        const v = (j / segV) * 2 - 1;
+        let off = -cup * v * v * w;
+        if (o.ruffle) off += o.ruffle(u, v);
+        pos.push(v * w, y + ny * off, z + nz * off);
+        uv.push((v + 1) / 2, u);
+      }
+      y += Math.cos(a) * ds; z += Math.sin(a) * ds;
+    }
+    for (let i = 0; i < segU; i++) for (let j = 0; j < segV; j++) {
+      const a = i * (segV + 1) + j, b = a + segV + 1;
+      idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  const mats = {};
+  function mat(name, opts) {
+    if (!mats[name]) mats[name] = new THREE.MeshStandardMaterial(Object.assign({ side: THREE.DoubleSide, roughness: 0.6, metalness: 0 }, opts));
+    return mats[name];
+  }
+
+  const lilyTex = {};
+  Object.keys(LILIES).forEach(k => { lilyTex[k] = lilyTexture(k); });
+  const carnTex = {
+    red: carnationTexture('#d0102c', '#7a0618'),
+    pink: carnationTexture('#f27aa0', '#c23c6c'),
+    picotee: carnationTexture('#fff7f4', '#f1dfe0', 'rgba(196,14,62,0.95)'),
+    purple: carnationTexture('#9a55c4', '#4f1e6e'),
+    yellow: carnationTexture('#f7d64e', '#c9901a', 'rgba(214,40,40,0.85)'),
+    striped: carnationTexture('#fff3f0', '#efd9da', null, 'rgba(200,20,60,0.8)'),
+    peach: carnationTexture('#fbb48f', '#d9704f'),
+    green: carnationTexture('#c8e08a', '#7fa24a'),
+    blush: carnationTexture('#ffe1e8', '#f2b3c4')
+  };
+  const lilyLeafTex = leafTexture('#5f8f4f', '#2f5a2c');
+  const carnLeafTex = leafTexture('#8fb0a0', '#4f7366');
+
+  const stemMat = mat('stem', { color: 0x2e5a26, roughness: 0.55 });
+  const carnStemMat = mat('carnStem', { color: 0x46705e, roughness: 0.5 });
+
+  // ---------- lily ----------
+  function makeLily(kind) {
+    const g = new THREE.Group();
+    const m = mat('lily-' + kind, { map: lilyTex[kind], roughness: 0.48 });
+    const extraCurl = LILIES[kind].curl;
+    for (let k = 0; k < 6; k++) {
+      const outer = k % 2 === 0;
+      const ph = rand() * TAU;
+      const geo = petalGeo({
+        len: outer ? 1.0 : 0.95,
+        width: u => (outer ? 0.19 : 0.25) * Math.sin(Math.PI * Math.pow(u, 0.62)),
+        tilt: outer ? 0.55 : 0.45,
+        curl: (outer ? 1.75 : 1.55) + extraCurl,
+        curlPow: 1.7,
+        cup: 0.32,
+        ruffle: outer ? null : (u, v) => 0.035 * Math.sin(v * 9 + ph + u * 14) * u * v * v,
+        segU: 30, segV: 12
+      });
+      const p = new THREE.Mesh(geo, m);
+      p.rotation.y = k * TAU / 6 + (rand() - 0.5) * 0.12;
+      p.position.y = outer ? 0 : 0.015;
+      g.add(p);
+    }
+    const filMat = mat('filament', { color: 0xe7efc4, roughness: 0.5 });
+    const antherMat = mat('anther', { color: 0x8a3510, roughness: 0.85 });
+    for (let k = 0; k < 6; k++) {
+      const th = k * TAU / 6 + TAU / 12;
+      const dx = Math.sin(th), dz = Math.cos(th);
+      const r = 0.26 + rand() * 0.06, hgt = 0.55 + rand() * 0.08;
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0.02, 0),
+        new THREE.Vector3(dx * 0.05, 0.25, dz * 0.05),
+        new THREE.Vector3(dx * r * 0.7, hgt * 0.9, dz * r * 0.7),
+        new THREE.Vector3(dx * r, hgt, dz * r)
+      ]);
+      g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.007, 5), filMat));
+      const anther = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), antherMat);
+      anther.scale.set(0.7, 0.7, 2.2);
+      anther.position.set(dx * r, hgt + 0.01, dz * r);
+      anther.rotation.y = th + Math.PI / 2;
+      g.add(anther);
+    }
+    const pistil = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.02, 0.35, 0.01), new THREE.Vector3(0.06, 0.68, 0.03)
+    ]);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(pistil, 14, 0.012, 6), mat('pistil', { color: 0xd9e5b0 })));
+    const stigma = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 10), mat('stigma', { color: 0x7d8f3e, roughness: 0.7 }));
+    stigma.position.set(0.06, 0.7, 0.03); g.add(stigma);
+    const ovary = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.03, 0.18, 10), stemMat);
+    ovary.position.y = -0.08; g.add(ovary);
+    g.scale.setScalar(0.78);
+    return g;
+  }
+
+  function makeBud(kind) {
+    const geo = new THREE.SphereGeometry(0.1, 16, 12);
+    const budColor = { pink: 0xd58aa6, white: 0xdbe6b0, tiger: 0xe8873e, yellow: 0xe8dc7a }[kind] || 0xdbe6b0;
+    const bud = new THREE.Mesh(geo, mat('bud-' + kind, { color: budColor, roughness: 0.5 }));
+    bud.scale.set(0.9, 3.4, 0.9);
+    bud.position.y = 0.3;
+    const g = new THREE.Group(); g.add(bud);
+    return g;
+  }
+
+  // ---------- carnation ----------
+  function makeCarnation(kind) {
+    const g = new THREE.Group();
+    const m = mat('carn-' + kind, { map: carnTex[kind], alphaTest: 0.45, roughness: 0.7 });
+    const rings = [
+      { n: 5, tilt: 0.12, len: 0.2, y: 0.07 },
+      { n: 7, tilt: 0.42, len: 0.25, y: 0.055 },
+      { n: 9, tilt: 0.75, len: 0.29, y: 0.04 },
+      { n: 11, tilt: 1.05, len: 0.32, y: 0.025 },
+      { n: 12, tilt: 1.32, len: 0.33, y: 0.01 }
+    ];
+    rings.forEach((ring, ri) => {
+      const off = rand() * TAU;
+      for (let k = 0; k < ring.n; k++) {
+        const ph = rand() * TAU, amp = 0.018 + rand() * 0.015;
+        const geo = petalGeo({
+          len: ring.len * (0.92 + rand() * 0.16),
+          width: u => 0.03 + 0.13 * Math.pow(u, 0.7),
+          tilt: ring.tilt + (rand() - 0.5) * 0.2,
+          curl: 0.35 + ri * 0.05,
+          cup: 0.12,
+          ruffle: (u, v) => amp * Math.sin(v * 8 + ph) * u * u,
+          segU: 10, segV: 12
+        });
+        const p = new THREE.Mesh(geo, m);
+        p.rotation.y = off + k * TAU / ring.n + (rand() - 0.5) * 0.25;
+        p.position.y = ring.y;
+        g.add(p);
+      }
+    });
+    const calyx = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.035, 0.3, 14), carnStemMat);
+    calyx.position.y = -0.13; g.add(calyx);
+    for (let k = 0; k < 5; k++) {
+      const sepal = new THREE.Mesh(petalGeo({ len: 0.12, width: u => 0.035 * (1 - u), tilt: 0.15, curl: 0.2, segU: 4, segV: 2 }), carnStemMat);
+      sepal.rotation.y = k * TAU / 5; sepal.position.y = 0.0; sepal.position.y = -0.02;
+      sepal.translateZ(0.06);
+      g.add(sepal);
+    }
+    g.scale.setScalar(1.05);
+    return g;
+  }
+
+  // ---------- leaves ----------
+  function addLeaf(parent, at, kind) {
+    const lily = kind === 'lily';
+    const geo = petalGeo({
+      len: lily ? 0.75 + rand() * 0.2 : 0.55 + rand() * 0.2,
+      width: lily ? (u => 0.08 * Math.sin(Math.PI * Math.pow(u, 0.6))) : (u => 0.028 * Math.sin(Math.PI * Math.pow(u, 0.5))),
+      tilt: 0.5 + rand() * 0.4,
+      curl: lily ? 0.9 : 1.3,
+      cup: 0.25, segU: 14, segV: 4
+    });
+    const m = lily ? mat('leafL', { map: lilyLeafTex, roughness: 0.55 }) : mat('leafC', { map: carnLeafTex, roughness: 0.5 });
+    const leaf = new THREE.Mesh(geo, m);
+    const holder = new THREE.Group();
+    holder.position.copy(at);
+    holder.rotation.y = rand() * TAU;
+    holder.add(leaf);
+    parent.add(holder);
+  }
+
+  // ---------- bouquet ----------
+  const bouquet = new THREE.Group();
+  scene.add(bouquet);
+  const swaying = [];
+
+  const stems = [
+    { type: 'lily', kind: 'pink', tip: [0.1, 1.55, 0.15], dir: [0.25, 1, 0.35] },
+    { type: 'lily', kind: 'white', tip: [-0.8, 1.05, 0.3], dir: [-0.95, 0.75, 0.45] },
+    { type: 'lily', kind: 'tiger', tip: [0.75, 0.75, -0.55], dir: [0.8, 0.7, -0.75] },
+    { type: 'lily', kind: 'yellow', tip: [0.25, 1.15, -0.85], dir: [0.15, 0.9, -1] },
+    { type: 'lily', kind: 'burgundy', tip: [-0.95, 0.35, -0.85], dir: [-0.9, 0.5, -0.9] },
+    { type: 'lily', kind: 'peach', tip: [1.05, 0.3, 0.25], dir: [1, 0.45, 0.3] },
+    { type: 'carn', kind: 'red', tip: [0.78, 0.95, 0.5], dir: [0.8, 0.9, 0.55] },
+    { type: 'carn', kind: 'purple', tip: [-0.45, 1.3, -0.4], dir: [-0.45, 1, -0.45] },
+    { type: 'carn', kind: 'yellow', tip: [-0.85, 0.5, -0.35], dir: [-1, 0.55, -0.3] },
+    { type: 'carn', kind: 'picotee', tip: [-0.05, 0.75, 0.9], dir: [-0.05, 0.6, 1] },
+    { type: 'carn', kind: 'pink', tip: [-0.35, 0.95, 0.75], dir: [-0.5, 0.9, 0.7] },
+    { type: 'carn', kind: 'striped', tip: [0.35, 0.45, -0.25], dir: [0.6, 0.5, -0.2] },
+    { type: 'carn', kind: 'peach', tip: [0.5, 0.3, 0.85], dir: [0.55, 0.4, 0.9] },
+    { type: 'carn', kind: 'green', tip: [-0.2, 0.3, -1.0], dir: [-0.2, 0.45, -1] },
+    { type: 'carn', kind: 'blush', tip: [-0.75, 0.15, 0.7], dir: [-0.8, 0.35, 0.75] },
+    { type: 'bud', kind: 'pink', tip: [0.45, 1.75, -0.1], dir: [0.35, 1, -0.1] },
+    { type: 'bud', kind: 'white', tip: [-0.55, 1.55, 0.05], dir: [-0.4, 1, 0.1] },
+    { type: 'bud', kind: 'tiger', tip: [0.95, 1.2, -0.3], dir: [0.6, 1, -0.2] }
+  ];
+
+  const UP = new THREE.Vector3(0, 1, 0);
+  stems.forEach(s => {
+    const tip = new THREE.Vector3(...s.tip);
+    const dir = new THREE.Vector3(...s.dir).normalize();
+    const base = new THREE.Vector3((rand() - 0.5) * 0.25, -2.35, (rand() - 0.5) * 0.25);
+    const gather = new THREE.Vector3(tip.x * 0.08, -1.35, tip.z * 0.08);
+    const lead = tip.clone().addScaledVector(dir, -0.45);
+    const curve = new THREE.CatmullRomCurve3([base, gather, lead, tip]);
+    const isCarn = s.type === 'carn';
+    const radius = s.type === 'lily' ? 0.026 : isCarn ? 0.02 : 0.016;
+    bouquet.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 40, radius, 7), isCarn ? carnStemMat : stemMat));
+
+    if (s.type !== 'bud') {
+      const n = s.type === 'lily' ? 3 : 2;
+      for (let i = 0; i < n; i++) addLeaf(bouquet, curve.getPoint(0.32 + i * 0.16 + rand() * 0.06), s.type);
+    }
+
+    const head = s.type === 'lily' ? makeLily(s.kind) : isCarn ? makeCarnation(s.kind) : makeBud(s.kind);
+    const pivot = new THREE.Group();
+    pivot.position.copy(tip);
+    pivot.quaternion.setFromUnitVectors(UP, dir);
+    head.rotation.y = rand() * TAU;
+    pivot.add(head);
+    bouquet.add(pivot);
+    swaying.push({ obj: pivot, base: pivot.quaternion.clone(), ph: rand() * TAU, amp: 0.025 + rand() * 0.02 });
+  });
+
+  // satin ribbon where the stems gather
+  const ribbonMat = mat('ribbon', { color: 0xc98aa0, roughness: 0.3, metalness: 0.15 });
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.045, 10, 40), ribbonMat);
+  band.rotation.x = Math.PI / 2; band.position.y = -1.42; band.scale.set(1, 1, 2.2);
+  bouquet.add(band);
+  [-1, 1].forEach(side => {
+    const loop = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.03, 8, 30), ribbonMat);
+    loop.position.set(side * 0.14, -1.42, 0.19);
+    loop.scale.set(1.3, 0.75, 0.5);
+    loop.rotation.z = side * 0.3;
+    bouquet.add(loop);
+    const tail = new THREE.Mesh(petalGeo({ len: 0.6, width: u => 0.045 + 0.01 * u, tilt: Math.PI - 0.25 * side * -1 - 0.2, curl: 0.3, ruffle: (u, v) => 0.03 * Math.sin(u * 9), segU: 16, segV: 2 }), ribbonMat);
+    tail.position.set(side * 0.04, -1.45, 0.2);
+    tail.rotation.y = side * 0.5;
+    bouquet.add(tail);
+  });
+
+  // ---------- drifting pollen ----------
+  const sprite = canvasTex(64, 64, (g, w) => {
+    const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+    r.addColorStop(0, 'rgba(255,236,200,1)'); r.addColorStop(0.4, 'rgba(255,210,170,0.45)'); r.addColorStop(1, 'rgba(255,200,170,0)');
+    g.fillStyle = r; g.fillRect(0, 0, w, w);
+  });
+  const N = 140, pPos = new Float32Array(N * 3), pSpeed = [];
+  for (let i = 0; i < N; i++) {
+    pPos[i * 3] = (rand() - 0.5) * 7; pPos[i * 3 + 1] = (rand() - 0.5) * 6; pPos[i * 3 + 2] = (rand() - 0.5) * 5;
+    pSpeed.push(0.05 + rand() * 0.12);
+  }
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pollen = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.07, map: sprite, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.8 }));
+  scene.add(pollen);
+
+  // ---------- view & interaction ----------
+  const target = new THREE.Vector3(0, -0.15, 0);
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const fit = Math.min(1, camera.aspect * 1.65);
+    const dist = 9.6 / fit;
+    camera.position.set(0, 1.2 + (1 - fit) * 0.8, dist);
+    camera.lookAt(target);
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let auto = true;
+  const autoSpeed = reduceMotion ? 0.06 : 0.32;
+  let angle = 0, velocity = 0, dragging = false, lastX = 0;
+  const toggle = document.getElementById('toggle');
+  toggle.addEventListener('click', () => { auto = !auto; toggle.textContent = auto ? 'Pause' : 'Spin'; });
+  canvas.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; velocity = 0; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX; lastX = e.clientX;
+    angle += dx * 0.008; velocity = dx * 0.008 * 60;
+  });
+  const end = () => { dragging = false; };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+
+  const clock = new THREE.Clock();
+  const q = new THREE.Quaternion(), e3 = new THREE.Euler();
+  function frame() {
+    const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+    if (!dragging) {
+      angle += (auto ? autoSpeed : 0) * dt + velocity * dt;
+      velocity *= Math.pow(0.04, dt);
+    }
+    bouquet.rotation.y = angle;
+    bouquet.position.y = reduceMotion ? 0 : Math.sin(t * 0.7) * 0.04;
+    if (!reduceMotion) {
+      swaying.forEach(s => {
+        e3.set(Math.sin(t * 0.9 + s.ph) * s.amp, 0, Math.cos(t * 0.7 + s.ph) * s.amp);
+        q.setFromEuler(e3);
+        s.obj.quaternion.copy(s.base).multiply(q);
+      });
+      for (let i = 0; i < N; i++) {
+        pPos[i * 3 + 1] += pSpeed[i] * dt;
+        pPos[i * 3] += Math.sin(t * 0.5 + i) * 0.002;
+        if (pPos[i * 3 + 1] > 3) pPos[i * 3 + 1] = -3;
+      }
+      pGeo.attributes.position.needsUpdate = true;
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</html>
