@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+<title>Level 24</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;600&display=swap">
+<style>
+  /* Layout: one full-screen gold-on-black arcade stage. HUD top, prompts bottom-center, overlays centered. */
+  :root {
+    --bg: #0d0a06;
+    --bg-glow: #3a2a10;
+    --gold: #f0c050;
+    --gold-hi: #ffe08a;
+    --gold-dim: #8a6a2a;
+    --text: #f6ecd6;
+    --muted: rgba(246, 236, 214, 0.62);
+    --panel: rgba(16, 12, 7, 0.88);
+    --pixel: "Press Start 2P", "Courier New", monospace;
+    --body: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(ellipse 65% 55% at 50% 50%, var(--bg-glow) 0%, var(--bg) 70%), var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+  #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; }
+  button {
+    font: 400 0.7rem/1 var(--pixel);
+    letter-spacing: 0.06em;
+    color: var(--bg);
+    background: var(--gold);
+    border: 0;
+    border-radius: 2px;
+    padding: 14px 18px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--gold-dim);
+  }
+  button:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--gold-dim); }
+  button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 4px; }
+  button.ghost { background: transparent; color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-dim); }
+
+  .edge-x {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  #hud {
+    position: fixed; left: 0; right: 0;
+    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    display: grid; justify-items: center; gap: 10px;
+    pointer-events: none;
+  }
+  #hud .lvl { font-family: var(--pixel); font-size: 0.75rem; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
+  #hud .lvl b { font-weight: 400; font-size: 1.5rem; color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+  #hud .bar { width: min(320px, 100%); height: 12px; border: 2px solid var(--gold-dim); padding: 2px; box-sizing: border-box; }
+  #hud .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-hi)); transition: width 0.2s ease; }
+  #mute {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    right: max(14px, env(safe-area-inset-right, 0px));
+    font-size: 0.55rem; padding: 9px 10px;
+  }
+
+  #banner {
+    position: fixed; left: 0; right: 0; top: 30%;
+    text-align: center; pointer-events: none;
+    font-family: var(--pixel); color: var(--gold-hi);
+    font-size: clamp(1.3rem, 6vw, 2.6rem); line-height: 1.3;
+    text-shadow: 0 0 18px rgba(255, 200, 80, 0.55), 0 4px 0 #6b4a12;
+    opacity: 0;
+  }
+  #banner.show { animation: bannerIn 2.4s ease both; }
+  #banner.stay { animation: bannerStay 0.6s ease both; }
+  @keyframes bannerIn { 0% { opacity: 0; transform: scale(0.6); } 12% { opacity: 1; transform: scale(1.08); } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes bannerStay { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+
+  #pops { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .pop {
+    position: absolute; transform: translate(-50%, -100%);
+    font-family: var(--pixel); font-size: 0.7rem; color: var(--gold-hi);
+    text-shadow: 0 2px 0 #6b4a12; white-space: nowrap;
+    animation: pop 0.9s ease-out forwards;
+  }
+  @keyframes pop { from { opacity: 1; transform: translate(-50%, -100%); } to { opacity: 0; transform: translate(-50%, -260%); } }
+
+  .bottom {
+    position: fixed; left: 0; right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+  }
+  #hint { font-family: var(--pixel); font-size: 0.62rem; line-height: 1.8; color: var(--gold); text-align: center; pointer-events: none; animation: blink 1.4s steps(2, start) infinite; }
+  @keyframes blink { 50% { opacity: 0.35; } }
+
+  #caption {
+    position: fixed; left: 0; right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+    display: flex; justify-content: center; pointer-events: none;
+  }
+  #caption .box {
+    width: min(420px, 100%); box-sizing: border-box;
+    background: var(--panel); border: 1px solid var(--gold-dim);
+    padding: 14px 16px; display: grid; gap: 8px;
+  }
+  #caption b { font: 400 0.7rem/1.4 var(--pixel); color: var(--gold-hi); }
+  #caption p { margin: 0; font-size: 1rem; line-height: 1.4; color: var(--text); }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 5;
+    display: grid; place-items: center;
+    padding-block: 24px;
+  }
+  #start { background: radial-gradient(ellipse at center, rgba(58, 42, 16, 0.85), rgba(13, 10, 6, 0.97) 70%); }
+  #msg { background: rgba(10, 8, 5, 0.72); }
+  .card {
+    width: min(440px, 100%); box-sizing: border-box;
+    display: grid; gap: 18px; justify-items: center; text-align: center;
+  }
+  .eyebrow { margin: 0; font: 400 0.6rem/1.6 var(--pixel); color: var(--muted); letter-spacing: 0.12em; }
+  #start h1 {
+    margin: 0; font: 400 clamp(2.2rem, 11vw, 4rem)/1.1 var(--pixel); color: var(--gold-hi);
+    text-shadow: 0 0 24px rgba(255, 200, 80, 0.45), 0 6px 0 #6b4a12;
+  }
+  #start .sub { margin: 0; font-size: 1.05rem; line-height: 1.5; color: var(--muted); max-width: 32ch; }
+  .msgCard {
+    background: var(--panel); border: 2px solid var(--gold);
+    box-shadow: 0 0 0 6px rgba(240, 192, 80, 0.12), 0 30px 60px rgba(0, 0, 0, 0.5);
+    padding: 28px 24px 24px;
+    animation: bannerStay 0.5s ease both;
+  }
+  .msgText { margin: 0; font-size: clamp(1.15rem, 4.6vw, 1.35rem); line-height: 1.55; color: var(--text); text-wrap: pretty; }
+  .fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { #hint { animation: none; } .pop { animation-duration: 0.01s; } }
+  [hidden] { display: none !important; }
+</style>
+
+<canvas id="stage" aria-label="A birthday cake that levels up to 24 candles, then a gold podium of trophies"></canvas>
+
+<div id="hud" class="edge-x" hidden>
+  <div class="lvl"><span>LVL</span><b id="lvlNum">00</b><span>/ 24</span></div>
+  <div class="bar"><i id="bar"></i></div>
+</div>
+<button id="mute" type="button" hidden>SOUND ON</button>
+<div id="banner" class="edge-x" aria-live="polite"></div>
+<div id="pops"></div>
+
+<div class="bottom edge-x">
+  <div id="hint" hidden></div>
+  <button id="toCase" type="button" hidden>OPEN TROPHY CASE ▸</button>
+  <div id="endBar" hidden style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button id="msgBtn" type="button" class="ghost">MESSAGE</button>
+    <button id="replay" type="button" class="ghost">REPLAY</button>
+  </div>
+</div>
+
+<div id="caption" class="edge-x" hidden><div class="box"><b id="capTitle"></b><p id="capText"></p></div></div>
+
+<div id="msg" class="overlay edge-x" hidden>
+  <div class="card msgCard" role="dialog" aria-modal="true" aria-label="Birthday message">
+    <p class="eyebrow">A MESSAGE FOR LVL 24</p>
+    <p class="msgText">happy bday, sorry can't celebrate your bday tdy, this is what i can do. ngl, kinda gay but hope u like it eh</p>
+    <button id="msgClose" type="button">SEE YOUR TROPHIES</button>
+  </div>
+</div>
+
+<div id="start" class="overlay edge-x">
+  <div class="card">
+    <p class="eyebrow">BIRTHDAY QUEST</p>
+    <h1>LEVEL 24</h1>
+    <p class="sub">Tap the cake to level up. Hit max level, make a wish, then claim your trophies.</p>
+    <button id="startBtn" type="button">PRESS START</button>
+  </div>
+</div>
+
+<div class="fallback" id="fallback" hidden>Your browser couldn't start 3D graphics, so the cake can't be shown here.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  if (!window.THREE) { $('fallback').hidden = false; return; }
+  const TAU = Math.PI * 2, MAX = 24;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let seed = 24;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+
+  const canvas = $('stage');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); }
+  catch (e) { $('fallback').hidden = false; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+
+  scene.add(new THREE.HemisphereLight(0xfff3d6, 0x1a1208, 0.55));
+  const key = new THREE.DirectionalLight(0xfff0d0, 1.2); key.position.set(3, 6, 4); scene.add(key);
+  const rimL = new THREE.DirectionalLight(0xffc870, 0.6); rimL.position.set(-4, 3, -4); scene.add(rimL);
+  const candleLight = new THREE.PointLight(0xffb24a, 0, 7); candleLight.position.set(0, 2.1, 0); scene.add(candleLight);
+
+  function canvasTex(w, h, draw) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+    return t;
+  }
+
+  // A soft studio environment so the gold actually reflects something.
+  const envTex = canvasTex(512, 256, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    gr.addColorStop(0, '#fffaec'); gr.addColorStop(0.4, '#e6c88a'); gr.addColorStop(0.6, '#8a6c3c'); gr.addColorStop(0.8, '#3a2c18'); gr.addColorStop(1, '#1a140c');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    [[80, 70], [260, 50], [420, 80]].forEach(([x, y]) => {
+      const r = g.createRadialGradient(x, y, 0, x, y, 60);
+      r.addColorStop(0, 'rgba(255,255,245,1)'); r.addColorStop(1, 'rgba(255,255,245,0)');
+      g.fillStyle = r; g.fillRect(x - 60, y - 60, 120, 120);
+    });
+  });
+  envTex.mapping = THREE.EquirectangularReflectionMapping;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromEquirectangular(envTex).texture;
+
+  const M = (o) => new THREE.MeshStandardMaterial(o);
+  const gold = M({ color: 0xffc94a, metalness: 1, roughness: 0.18 });
+  const goldSoft = M({ color: 0xe0b048, metalness: 1, roughness: 0.35 });
+  const dark = M({ color: 0x0e0b07, metalness: 0.1, roughness: 0.45, envMapIntensity: 0.35 });
+  const choc = M({ color: 0x2a170c, roughness: 0.75 });
+  const cream = M({ color: 0xf3e3c3, roughness: 0.55 });
+
+  // ---------- cake ----------
+  const cake = new THREE.Group();
+  scene.add(cake);
+  const cyl = (r, h, m, y) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 64), m); me.position.y = y; cake.add(me); return me; };
+  const pearlGeo = new THREE.SphereGeometry(0.036, 12, 8);
+  const dripGeo = new THREE.SphereGeometry(0.06, 12, 8);
+  function pearls(r, y, n) { for (let i = 0; i < n; i++) { const a = i / n * TAU; const p = new THREE.Mesh(pearlGeo, gold); p.position.set(Math.cos(a) * r, y, Math.sin(a) * r); cake.add(p); } }
+  function drips(r, y, n) {
+    for (let i = 0; i < n; i++) {
+      const a = (i + rand() * 0.4) / n * TAU;
+      const d = new THREE.Mesh(dripGeo, cream);
+      d.position.set(Math.cos(a) * r, y - rand() * 0.07, Math.sin(a) * r);
+      d.scale.set(1, 1.5 + rand() * 1.4, 0.7);
+      cake.add(d);
+    }
+  }
+  cyl(1.38, 0.06, goldSoft, 0.03);
+  cyl(1.1, 0.7, choc, 0.41);
+  cyl(1.115, 0.05, cream, 0.765);
+  drips(1.1, 0.7, 30);
+  pearls(1.125, 0.1, 46);
+  cyl(0.75, 0.5, choc, 1.04);
+  cyl(0.765, 0.05, cream, 1.29);
+  drips(0.75, 1.22, 22);
+  pearls(0.775, 0.83, 34);
+
+  // candles
+  const stripeTex = canvasTex(32, 128, (g, w, h) => {
+    g.fillStyle = '#fff8ea'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#e0aa3a'; g.lineWidth = 7;
+    for (let y = -40; y < 170; y += 26) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y + 18); g.stroke(); }
+  });
+  const flameTex = canvasTex(64, 128, (g) => {
+    g.translate(32, 84); g.scale(1, 2);
+    const r = g.createRadialGradient(0, 0, 0, 0, 0, 30);
+    r.addColorStop(0, '#fffbe6'); r.addColorStop(0.25, '#ffd970'); r.addColorStop(0.55, 'rgba(255,140,30,0.6)'); r.addColorStop(1, 'rgba(255,80,0,0)');
+    g.fillStyle = r; g.fillRect(-32, -42, 64, 64);
+  });
+  const smokeTex = canvasTex(64, 64, (g, w) => {
+    const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+    r.addColorStop(0, 'rgba(210,200,185,0.55)'); r.addColorStop(1, 'rgba(210,200,185,0)');
+    g.fillStyle = r; g.fillRect(0, 0, w, w);
+  });
+  const candleGeo = new THREE.CylinderGeometry(0.028, 0.028, 0.3, 12); candleGeo.translate(0, 0.15, 0);
+  const candleMat = M({ map: stripeTex, roughness: 0.5 });
+  const wickGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.04, 4); wickGeo.translate(0, 0.32, 0);
+  const wickMat = M({ color: 0x1a1410 });
+  const candles = [];
+  [[12, 0.6, 0], [8, 0.4, 0.2], [4, 0.18, 0.4]].forEach(([n, r, off]) => {
+    for (let i = 0; i < n; i++) {
+      const a = off + i / n * TAU;
+      const g = new THREE.Group();
+      g.position.set(Math.cos(a) * r, 1.315, Math.sin(a) * r);
+      g.add(new THREE.Mesh(candleGeo, candleMat));
+      g.add(new THREE.Mesh(wickGeo, wickMat));
+      const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+      flame.position.y = 0.39; flame.scale.set(0.08, 0.16, 1);
+      g.add(flame);
+      g.visible = false; g.scale.set(1, 0.001, 1);
+      cake.add(g);
+      candles.push({ g, flame, lit: false, out: false, grow: 0, ph: rand() * TAU });
+    }
+  });
+
+  // smoke puffs
+  const smoke = [];
+  const smokeMat = new THREE.SpriteMaterial({ map: smokeTex, depthWrite: false, transparent: true });
+  function puff(c) {
+    const p = new THREE.Vector3(); c.flame.getWorldPosition(p);
+    for (let k = 0; k < 2; k++) {
+      const s = new THREE.Sprite(smokeMat.clone());
+      s.position.copy(p); s.scale.setScalar(0.08);
+      scene.add(s);
+      s.visible = false;
+      smoke.push({ s, born: performance.now() / 1000 + k * 0.15, y0: p.y, x0: p.x, vx: (rand() - 0.5) * 0.15 });
+    }
+  }
+
+  // ---------- podium & trophies ----------
+  const podium = new THREE.Group();
+  podium.visible = false; podium.position.y = -5;
+  scene.add(podium);
+  function textTex(w, h, text, size, opts) {
+    return canvasTex(w, h, (g) => {
+      g.fillStyle = (opts && opts.bg) || '#120e08'; g.fillRect(0, 0, w, h);
+      if (opts && opts.border) { g.strokeStyle = '#c8922a'; g.lineWidth = 4; g.strokeRect(4, 4, w - 8, h - 8); }
+      g.fillStyle = '#f0c050'; g.font = `700 ${size}px "Press Start 2P", "Courier New", monospace`;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, w / 2, h / 2 + 2);
+    });
+  }
+  const steps = { 2: { x: -1.5, h: 0.65 }, 1: { x: 0, h: 1.0 }, 3: { x: 1.5, h: 0.4 } };
+  const numPlates = [];
+  Object.keys(steps).forEach(n => {
+    const s = steps[n], w = 1.5, d = 1.15;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(w, s.h, d), dark);
+    box.position.set(s.x, s.h / 2, 0); podium.add(box);
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.03, 0.05, d + 0.03), gold);
+    trim.position.set(s.x, s.h, 0); podium.add(trim);
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34), new THREE.MeshBasicMaterial({ map: textTex(128, 128, n, 64), toneMapped: false }));
+    plate.position.set(s.x, Math.min(s.h / 2, s.h - 0.24), d / 2 + 0.003); podium.add(plate);
+    numPlates.push({ plate, n });
+  });
+  const floor = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.75, 0.05, 64), dark);
+  floor.position.y = -0.025; podium.add(floor);
+  const floorRim = new THREE.Mesh(new THREE.TorusGeometry(2.72, 0.025, 8, 96), gold);
+  floorRim.rotation.x = Math.PI / 2; podium.add(floorRim);
+
+  function base(g, w, h, label) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), dark);
+    b.position.y = h / 2; g.add(b);
+    const t = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, 0.025, w + 0.02), gold);
+    t.position.y = h; g.add(t);
+    const plaque = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.86, h * 0.56), new THREE.MeshBasicMaterial({ map: textTex(256, 64, label, label.length > 9 ? 17 : 21, { border: true }), toneMapped: false }));
+    plaque.position.set(0, h / 2, w / 2 + 0.003); g.add(plaque);
+  }
+  function lathe(points) {
+    return new THREE.LatheGeometry(points.map(p => new THREE.Vector2(p[0], p[1])), 56);
+  }
+  function makeMainCup() {
+    const g = new THREE.Group();
+    base(g, 0.8, 0.32, 'LEVEL 24');
+    const cup = new THREE.Mesh(lathe([[0, 0], [0.32, 0], [0.32, 0.07], [0.12, 0.11], [0.07, 0.2], [0.06, 0.45], [0.12, 0.52], [0.07, 0.58], [0.1, 0.62], [0.3, 0.75], [0.4, 0.95], [0.44, 1.2], [0.42, 1.22], [0.36, 1.0], [0.25, 0.83], [0, 0.79]]), gold);
+    cup.position.y = 0.32; g.add(cup);
+    [-1, 1].forEach(side => {
+      const hnd = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.03, 10, 28, Math.PI), gold);
+      hnd.rotation.z = -side * Math.PI / 2; hnd.position.set(side * 0.38, 1.32, 0); g.add(hnd);
+    });
+    const star = starMesh(0.11); star.position.y = 1.58; g.add(star);
+    return g;
+  }
+  function starMesh(r) {
+    const s = new THREE.Shape();
+    for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5; const rr = i % 2 ? r * 0.45 : r; i ? s.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : s.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2 });
+    geo.center();
+    return new THREE.Mesh(geo, gold);
+  }
+  function makeLanky() {
+    const g = new THREE.Group();
+    base(g, 0.55, 0.26, 'LANKIEST');
+    const cup = new THREE.Mesh(lathe([[0, 0], [0.22, 0], [0.22, 0.06], [0.06, 0.1], [0.032, 0.2], [0.032, 1.75], [0.08, 1.8], [0.04, 1.85], [0.16, 1.98], [0.22, 2.18], [0.2, 2.2], [0.14, 2.01], [0, 1.97]]), gold);
+    cup.position.y = 0.26; g.add(cup);
+    return g;
+  }
+  function makeFoot() {
+    const g = new THREE.Group();
+    base(g, 0.55, 0.26, '6 TOES');
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.25, 16), gold);
+    stem.position.y = 0.26 + 0.125; g.add(stem);
+    const foot = new THREE.Group();
+    const s = new THREE.Shape();
+    s.moveTo(0, -0.32);
+    s.bezierCurveTo(0.17, -0.32, 0.2, -0.1, 0.17, 0.08);
+    s.bezierCurveTo(0.15, 0.26, 0.12, 0.31, 0, 0.31);
+    s.bezierCurveTo(-0.15, 0.31, -0.19, 0.2, -0.14, 0.05);
+    s.bezierCurveTo(-0.09, -0.08, -0.16, -0.32, 0, -0.32);
+    const ext = { depth: 0.06, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 24 };
+    foot.add(new THREE.Mesh(new THREE.ExtrudeGeometry(s, ext), gold));
+    [[-0.12, 0.43, 0.072], [0.0, 0.46, 0.058], [0.09, 0.44, 0.05], [0.165, 0.4, 0.044], [0.222, 0.34, 0.038], [0.26, 0.27, 0.032]].forEach(([x, y, r]) => {
+      const c = new THREE.Shape(); c.absarc(0, 0, r, 0, TAU, false);
+      const toe = new THREE.Mesh(new THREE.ExtrudeGeometry(c, ext), gold);
+      toe.position.set(x, y, 0); foot.add(toe);
+    });
+    foot.scale.setScalar(0.85);
+    foot.position.set(-0.03, 0.26 + 0.25 + 0.32 * 0.85, -0.03);
+    g.add(foot);
+    return g;
+  }
+  function makeWhistle() {
+    const g = new THREE.Group();
+    base(g, 0.55, 0.26, 'BEST REF');
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.2, 16), gold);
+    stem.position.y = 0.36; g.add(stem);
+    const w = new THREE.Group();
+    const chamber = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.15, 40), gold);
+    chamber.rotation.x = Math.PI / 2; w.add(chamber);
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.13), gold);
+    mouth.position.set(0.25, 0.07, 0); w.add(mouth);
+    const hole = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.02, 0.1), dark);
+    hole.position.set(0.06, 0.16, 0); w.add(hole);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.016, 10, 24), gold);
+    ring.position.set(-0.14, 0.16, 0); w.add(ring);
+    w.position.y = 0.46 + 0.16;
+    w.rotation.z = 0.12;
+    g.add(w);
+    return g;
+  }
+
+  const trophies = [
+    { g: makeMainCup(), x: 0, y: steps[1].h, key: 'main' },
+    { g: makeWhistle(), x: -1.82, y: steps[2].h, key: 'ref' },
+    { g: makeFoot(), x: -1.15, y: steps[2].h, key: 'toes' },
+    { g: makeLanky(), x: 1.5, y: steps[3].h, key: 'lanky' }
+  ];
+  const AWARDS = {
+    main: ['LEVEL 24', 'Max level reached. 24 years and still undefeated.'],
+    ref: ['BEST REF', 'Sharp eyes, fair calls, loud whistle. No bribes accepted.'],
+    toes: ['SIX TOE CLUB', 'Exclusive membership. Entry requirement: one bonus toe.'],
+    lanky: ['LANKIEST LEGEND', 'Built like a floor lamp. Came third and is still the tallest one up here.']
+  };
+  trophies.forEach(t => {
+    t.g.position.set(t.x, t.y + 4, 0);
+    t.g.visible = false;
+    t.g.userData.award = t.key;
+    t.spin = 0;
+    podium.add(t.g);
+  });
+
+  // ---------- confetti ----------
+  const NC = reduce ? 70 : 260;
+  const conf = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.06, 0.1), M({ side: THREE.DoubleSide, metalness: 0.7, roughness: 0.3 }), NC);
+  conf.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  conf.frustumCulled = false;
+  scene.add(conf);
+  const confColors = ['#f0c050', '#ffe08a', '#c8922a', '#fff6e0', '#a8741c'];
+  const cd = [];
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < NC; i++) {
+    conf.setColorAt(i, new THREE.Color(confColors[i % confColors.length]));
+    cd.push({ p: new THREE.Vector3(0, -50, 0), v: new THREE.Vector3(), r: new THREE.Euler(), rv: new THREE.Vector3(), alive: false });
+  }
+  conf.instanceColor.needsUpdate = true;
+  function burst(y) {
+    cd.forEach(c => {
+      c.p.set((rand() - 0.5) * 0.8, y + rand() * 0.4, (rand() - 0.5) * 0.8);
+      c.v.set((rand() - 0.5) * 6, 3 + rand() * 4.5, (rand() - 0.5) * 6);
+      c.r.set(rand() * TAU, rand() * TAU, rand() * TAU);
+      c.rv.set((rand() - 0.5) * 12, (rand() - 0.5) * 12, (rand() - 0.5) * 12);
+      c.alive = true;
+    });
+  }
+  function updateConfetti(dt) {
+    for (let i = 0; i < NC; i++) {
+      const c = cd[i];
+      if (c.alive) {
+        c.v.y -= 5.5 * dt;
+        c.v.multiplyScalar(1 - 1.6 * dt);
+        if (c.v.y < -1.2) c.v.y = -1.2;
+        c.p.addScaledVector(c.v, dt);
+        c.r.x += c.rv.x * dt; c.r.y += c.rv.y * dt; c.r.z += c.rv.z * dt;
+        if (c.p.y < -3) c.alive = false;
+      }
+      dummy.position.copy(c.alive ? c.p : new THREE.Vector3(0, -50, 0));
+      dummy.rotation.copy(c.r);
+      dummy.scale.setScalar(c.alive ? 1 : 0.0001);
+      dummy.updateMatrix();
+      conf.setMatrixAt(i, dummy.matrix);
+    }
+    conf.instanceMatrix.needsUpdate = true;
+  }
+
+  // ---------- sound ----------
+  let ac = null, muted = false;
+  function initAudio() {
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; }
+  }
+  function tone(f, d, type, v, delay) {
+    if (!ac || muted) return;
+    const t = ac.currentTime + (delay || 0);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || 'square'; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(v || 0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + 0.02);
+  }
+  const sLevel = n => { const f = 262 * Math.pow(2, n / 12); tone(f, 0.09, 'square', 0.045); tone(f * 1.5, 0.12, 'square', 0.035, 0.06); };
+  const sMax = () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 'square', 0.05, i * 0.1));
+  const sFanfare = () => { [392, 523, 659, 784].forEach((f, i) => tone(f, 0.18, 'square', 0.045, i * 0.12)); tone(1047, 0.6, 'square', 0.05, 0.5); tone(523, 0.6, 'triangle', 0.08, 0.5); };
+  const sClink = () => { tone(1760, 0.18, 'triangle', 0.06); tone(2637, 0.25, 'sine', 0.03, 0.02); };
+  function sWhoosh() {
+    if (!ac || muted) return;
+    const len = ac.sampleRate * 0.7, buf = ac.createBuffer(1, len, ac.sampleRate), data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8;
+    const t = ac.currentTime;
+    bp.frequency.setValueAtTime(1400, t); bp.frequency.exponentialRampToValueAtTime(250, t + 0.7);
+    const g = ac.createGain(); g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    src.connect(bp); bp.connect(g); g.connect(ac.destination); src.start(t);
+  }
+
+  // ---------- UI helpers ----------
+  const hint = $('hint'), banner = $('banner');
+  function setHint(text) { hint.hidden = !text; hint.textContent = text || ''; }
+  function showBanner(text, stay) {
+    banner.textContent = text;
+    banner.className = 'edge-x';
+    void banner.offsetWidth;
+    banner.className = 'edge-x ' + (stay ? 'stay' : 'show');
+  }
+  function hideBanner() { banner.className = 'edge-x'; banner.textContent = ''; }
+  function updateHud() {
+    $('lvlNum').textContent = String(lit).padStart(2, '0');
+    $('bar').style.width = (lit / MAX * 100) + '%';
+  }
+  function popAt(obj, text) {
+    const v = new THREE.Vector3(); obj.getWorldPosition(v); v.y += 0.45; v.project(camera);
+    const el = document.createElement('div');
+    el.className = 'pop'; el.textContent = text;
+    el.style.left = ((v.x + 1) / 2 * window.innerWidth) + 'px';
+    el.style.top = ((1 - v.y) / 2 * window.innerHeight) + 'px';
+    $('pops').appendChild(el);
+    setTimeout(() => el.remove(), 950);
+  }
+
+  // ---------- timing ----------
+  let run = 0;
+  const later = (ms, fn) => { const r = run; setTimeout(() => { if (r === run) fn(); }, ms); };
+  const tweens = [];
+  const now = () => performance.now() / 1000;
+  function tween(delay, dur, fn) { tweens.push({ start: now() + delay, dur, fn }); }
+  const easeOut = p => 1 - Math.pow(1 - p, 3);
+  const easeIn = p => p * p * p;
+  function bounce(p) {
+    const n = 7.5625, d = 2.75;
+    if (p < 1 / d) return n * p * p;
+    if (p < 2 / d) return n * (p -= 1.5 / d) * p + 0.75;
+    if (p < 2.5 / d) return n * (p -= 2.25 / d) * p + 0.9375;
+    return n * (p -= 2.625 / d) * p + 0.984375;
+  }
+
+  // ---------- flow ----------
+  let phase = 'start', lit = 0, mode = 'cake';
+
+  function lightNext() {
+    if (lit >= MAX) return;
+    const c = candles[lit];
+    c.lit = true; c.g.visible = true;
+    lit++;
+    updateHud();
+    sLevel(lit);
+    popAt(c.g, lit === MAX ? 'MAX!' : '+1 LVL');
+    if (lit === 1) setHint('KEEP TAPPING');
+    if (lit === MAX) {
+      phase = 'max';
+      setHint('');
+      later(250, () => { showBanner('MAX LEVEL'); sMax(); });
+      later(2300, () => { phase = 'wish'; setHint('MAKE A WISH… THEN TAP TO BLOW'); });
+    }
+  }
+
+  function blowOut() {
+    phase = 'blowing';
+    setHint('');
+    sWhoosh();
+    candles.forEach((c, i) => later(i * 40, () => { c.out = true; c.flame.visible = false; puff(c); }));
+    const end = MAX * 40;
+    later(end + 300, () => { burst(1.6); showBanner('HAPPY BIRTHDAY'); sFanfare(); });
+    later(end + 2900, () => { phase = 'blown'; $('toCase').hidden = false; });
+  }
+
+  function openCase() {
+    $('toCase').hidden = true;
+    $('hud').hidden = true;
+    hideBanner();
+    phase = 'podium'; mode = 'podium';
+    userAngle = 0;
+    const cy = cake.position.y;
+    tween(0, 1.1, p => { cake.position.y = cy - 6 * easeIn(p); if (p === 1) cake.visible = false; });
+    podium.visible = true;
+    tween(0.7, 1.3, p => { podium.position.y = -5 + 5 * easeOut(p); });
+    trophies.forEach((t, i) => {
+      const d = 2.0 + i * 0.5;
+      later(d * 1000, () => { t.g.visible = true; });
+      tween(d, 0.9, p => { t.g.position.y = t.y + 4 * (1 - bounce(p)); if (p === 1) sClink(); });
+    });
+    later(4200, () => { burst(2.4); sFanfare(); });
+    later(5600, () => { phase = 'done'; $('msg').hidden = false; $('msgClose').focus(); });
+  }
+
+  function reset() {
+    run++;
+    tweens.length = 0;
+    lit = 0; updateHud();
+    candles.forEach(c => { c.lit = false; c.out = false; c.grow = 0; c.g.visible = false; c.g.scale.set(1, 0.001, 1); c.flame.visible = true; });
+    cake.position.y = 0; cake.visible = true;
+    podium.visible = false; podium.position.y = -5;
+    trophies.forEach(t => { t.g.visible = false; t.g.position.y = t.y + 4; t.spin = 0; });
+    cd.forEach(c => { c.alive = false; });
+    $('caption').hidden = true; $('endBar').hidden = true; $('toCase').hidden = true; $('msg').hidden = true;
+    hideBanner();
+    mode = 'cake'; userAngle = 0;
+    $('hud').hidden = false;
+    phase = 'level';
+    setHint('TAP THE CAKE TO LEVEL UP');
+  }
+
+  $('startBtn').addEventListener('click', () => {
+    initAudio();
+    $('start').hidden = true;
+    $('hud').hidden = false;
+    $('mute').hidden = false;
+    reset();
+  });
+  $('mute').addEventListener('click', () => { muted = !muted; $('mute').textContent = muted ? 'SOUND OFF' : 'SOUND ON'; });
+  $('toCase').addEventListener('click', openCase);
+  $('msgClose').addEventListener('click', () => {
+    $('msg').hidden = true;
+    $('endBar').hidden = false;
+    setHint($('caption').hidden ? 'TAP A TROPHY' : '');
+  });
+  $('msgBtn').addEventListener('click', () => { $('msg').hidden = false; $('msgClose').focus(); });
+  $('replay').addEventListener('click', reset);
+
+  // ---------- input ----------
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  function pick(x, y) {
+    ndc.set(x / window.innerWidth * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hits = ray.intersectObjects(trophies.map(t => t.g), true);
+    if (!hits.length) return;
+    let o = hits[0].object;
+    while (o && !o.userData.award) o = o.parent;
+    if (!o) return;
+    const t = trophies.find(tt => tt.g === o);
+    t.spin = TAU;
+    sClink();
+    const [title, text] = AWARDS[o.userData.award];
+    $('capTitle').textContent = title; $('capText').textContent = text;
+    $('caption').hidden = false;
+    setHint('');
+  }
+  function tap(x, y) {
+    if (phase === 'level') lightNext();
+    else if (phase === 'wish') blowOut();
+    else if (phase === 'done' && $('msg').hidden) pick(x, y);
+  }
+  let down = null, userAngle = 0;
+  canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, last: e.clientX, moved: false }; try { canvas.setPointerCapture(e.pointerId); } catch (err) {} });
+  canvas.addEventListener('pointermove', e => {
+    if (!down) return;
+    const dx = e.clientX - down.last; down.last = e.clientX;
+    if (Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 8) down.moved = true;
+    if (down.moved) userAngle += dx * 0.008;
+  });
+  canvas.addEventListener('pointerup', e => { if (down && !down.moved) tap(e.clientX, e.clientY); down = null; });
+  canvas.addEventListener('pointercancel', () => { down = null; });
+  document.addEventListener('keydown', e => {
+    if ((e.key === ' ' || e.key === 'Enter') && document.activeElement === document.body) { e.preventDefault(); tap(innerWidth / 2, innerHeight / 2); }
+  });
+
+  // ---------- camera ----------
+  const camPos = new THREE.Vector3(0, 2.7, 6), camLook = new THREE.Vector3(0, 0.8, 0);
+  const tPos = new THREE.Vector3(), tLook = new THREE.Vector3();
+  function camTarget() {
+    const a = camera.aspect;
+    if (mode === 'cake') { const fit = Math.min(1, a * 1.3); tPos.set(0, 2.7, 4.6 / fit); tLook.set(0, 0.75, 0); }
+    else { const fit = Math.min(1, a * 1.15); tPos.set(0, 2.9 + (1 - fit) * 2, 9.6 / fit); tLook.set(0, 1.25, 0); }
+  }
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    camTarget(); camPos.copy(tPos); camLook.copy(tLook);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- loop ----------
+  const clock = new THREE.Clock();
+  function frame() {
+    const raw = clock.getDelta(), dt = Math.min(raw, 0.05), t = clock.elapsedTime, n = now();
+    for (let i = tweens.length - 1; i >= 0; i--) {
+      const tw = tweens[i];
+      if (n < tw.start) continue;
+      const p = Math.min(1, (n - tw.start) / tw.dur);
+      tw.fn(p);
+      if (p >= 1) tweens.splice(i, 1);
+    }
+    camTarget();
+    const k = 1 - Math.exp(-Math.min(raw, 1) * 2.5);
+    camPos.lerp(tPos, k); camLook.lerp(tLook, k);
+    camera.position.copy(camPos); camera.lookAt(camLook);
+
+    cake.rotation.y = userAngle + (reduce ? 0 : t * 0.25);
+    podium.rotation.y = userAngle + (reduce ? 0 : Math.sin(t * 0.35) * 0.3);
+
+    let burning = 0;
+    candles.forEach((c, i) => {
+      if (c.lit) {
+        c.grow = Math.min(1, c.grow + dt * 6);
+        c.g.scale.y = Math.max(0.001, easeOut(c.grow));
+        if (!c.out) {
+          burning++;
+          const f = reduce ? 1 : 1 + 0.12 * Math.sin(t * 17 + c.ph) + 0.06 * Math.sin(t * 29 + i);
+          c.flame.scale.set(0.08 * (2 - f), 0.16 * f, 1);
+        }
+      }
+    });
+    candleLight.intensity += ((0.15 + burning * 0.09) * (burning ? 1 : 0) - candleLight.intensity) * Math.min(1, dt * 8);
+
+    for (let i = smoke.length - 1; i >= 0; i--) {
+      const s = smoke[i];
+      const life = n - s.born;
+      if (life < 0) continue;
+      s.s.visible = true;
+      s.s.position.y = s.y0 + life * 0.45; s.s.position.x = s.x0 + s.vx * life;
+      s.s.scale.setScalar(0.08 + life * 0.35);
+      s.s.material.opacity = Math.max(0, 1 - life / 1.6);
+      if (life > 1.6) { scene.remove(s.s); s.s.material.dispose(); smoke.splice(i, 1); }
+    }
+
+    trophies.forEach(t => {
+      if (t.spin > 0) { const step = Math.min(t.spin, dt * 7); t.spin -= step; t.g.rotation.y += step; }
+    });
+
+    updateConfetti(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</html>
